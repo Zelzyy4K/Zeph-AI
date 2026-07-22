@@ -7,7 +7,7 @@
         messages: [],
         currentChatId: null,
         isGenerating: false,
-        isSidebarOpen: window.innerWidth > 768,
+        isSidebarOpen: true, // ← DIUBAH: selalu terbuka di desktop
         model: 'mixtral-8x7b-32768',
         history: [],
         favorites: [],
@@ -728,7 +728,18 @@
 
         } catch (error) {
             console.error('AI Error:', error);
-            aiMsg.content = `❌ Terjadi kesalahan: ${error.message || 'Silakan coba lagi.'}`;
+            // Tampilkan error yang lebih detail
+            let errorMsg = '❌ Terjadi kesalahan pada AI. ';
+            if (error.message.includes('API key')) {
+                errorMsg += 'API key tidak valid atau tidak ditemukan. Pastikan GROQ_API_KEY sudah diatur di environment variables.';
+            } else if (error.message.includes('fetch')) {
+                errorMsg += 'Gagal terhubung ke server. Periksa koneksi internet.';
+            } else if (error.message.includes('HTTP 500')) {
+                errorMsg += 'Server mengalami error internal. Coba lagi nanti.';
+            } else {
+                errorMsg += error.message || 'Silakan coba lagi.';
+            }
+            aiMsg.content = errorMsg;
             renderMessages();
         } finally {
             state.isGenerating = false;
