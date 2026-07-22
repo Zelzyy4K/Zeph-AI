@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic
+// Zeph AI - Frontend Logic (FINAL)
 (function() {
     'use strict';
 
@@ -38,6 +38,9 @@
     const searchInput = $('search-chat');
     const charCounter = $('char-counter');
     const collapseBtn = $('collapse-btn');
+    const sidebarToggleBtn = $('sidebar-toggle-btn');
+
+    let sidebarVisible = true;
 
     // ── UTILITIES ──
     function uid() { return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
@@ -399,13 +402,29 @@
         chatInput.focus();
     }
 
-    // ── SIDEBAR ──
+    // ── SIDEBAR TOGGLE ──
     function toggleSidebar() {
         if (window.innerWidth <= 768) {
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
         } else {
-            sidebar.classList.toggle('hidden');
+            sidebarVisible = !sidebarVisible;
+            if (sidebarVisible) {
+                sidebar.classList.remove('desktop-collapsed');
+                sidebar.style.width = '280px';
+                sidebar.style.minWidth = '280px';
+                sidebar.style.overflow = 'hidden';
+                sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                sidebar.style.flexShrink = '0';
+            } else {
+                sidebar.classList.add('desktop-collapsed');
+                sidebar.style.width = '0';
+                sidebar.style.minWidth = '0';
+                sidebar.style.overflow = 'hidden';
+                sidebar.style.borderRight = 'none';
+                sidebar.style.padding = '0';
+                sidebar.style.flexShrink = '0';
+            }
         }
     }
 
@@ -518,18 +537,29 @@
         // New Chat
         newChatBtn.addEventListener('click', newChat);
 
-        // Sidebar Toggle
-        menuToggle.addEventListener('click', toggleSidebar);
+        // Sidebar Toggle - pakai satu tombol untuk semua
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', toggleSidebar);
+        }
+        if (menuToggle) {
+            menuToggle.addEventListener('click', toggleSidebar);
+        }
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', toggleSidebar);
+        }
         overlay.addEventListener('click', closeSidebarMobile);
-        collapseBtn.addEventListener('click', toggleSidebar);
 
         // Model
         modelSelect.addEventListener('change', () => { state.model = modelSelect.value; saveState(); });
 
         // Dark mode
         darkToggle.addEventListener('click', () => {
-            document.body.style.background = document.body.style.background === '#f5f5f5' ? '#0A0A0A' : '#f5f5f5';
-            document.body.style.color = document.body.style.color === '#111' ? '#FFFFFF' : '#111';
+            const isLight = document.body.style.background === '#f5f5f5';
+            document.body.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
+            document.body.style.color = isLight ? '#FFFFFF' : '#111';
+            // Update chat area
+            const chatArea = document.getElementById('chat-area');
+            if (chatArea) chatArea.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
         });
 
         // Clear
@@ -649,6 +679,15 @@
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
+                // Kembalikan sidebar ke visible di desktop
+                if (!sidebarVisible) {
+                    sidebarVisible = true;
+                    sidebar.classList.remove('desktop-collapsed');
+                    sidebar.style.width = '280px';
+                    sidebar.style.minWidth = '280px';
+                    sidebar.style.overflow = 'hidden';
+                    sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                }
             }
         });
 
