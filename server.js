@@ -1,4 +1,3 @@
-// server.js — Backend server dengan Express + Groq API
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -7,19 +6,17 @@ const Groq = require('groq-sdk');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// Inisialisasi Groq
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// ─── Endpoint Chat ───
+// Chat endpoint
 app.post('/api/chat', async (req, res) => {
-  const { messages, model = 'llama3-70b-8192', stream = true } = req.body;
+  const { messages, model = 'mixtral-8x7b-32768', stream = true } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Messages array required' });
@@ -74,17 +71,16 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// ─── Endpoint Health Check ───
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Route untuk halaman utama
-app.get('/', (req, res) => {
+// === INI YANG PALING PENTING: FALLBACK UNTUK SEMUA ROUTE ===
+app.get('*', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
 
-// ─── Start Server ───
 app.listen(PORT, () => {
   console.log(`🚀 Zeph AI Server running on http://localhost:${PORT}`);
   console.log(`📡 API endpoint: http://localhost:${PORT}/api/chat`);
