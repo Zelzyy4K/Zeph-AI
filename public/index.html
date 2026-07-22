@@ -4,13 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zeph AI — Modern AI Chat</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.0/marked.min.js"></script>
     <!-- DOMPurify -->
@@ -18,20 +16,19 @@
     <!-- Highlight.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
+
     <style>
-        /* === GLOBAL RESET === */
+        /* ── RESET ── */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
         body { background: #0A0A0A; color: #FFFFFF; overflow: hidden; height: 100vh; }
 
-        /* === SCROLLBAR === */
+        /* ── SCROLLBAR ── */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 8px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* === SIDEBAR - PASTI MUNCUL DI DESKTOP === */
+        /* ── APP LAYOUT ── */
         #app {
             display: flex;
             height: 100vh;
@@ -39,6 +36,7 @@
             overflow: hidden;
         }
 
+        /* ── SIDEBAR ── */
         #sidebar {
             width: 280px;
             min-width: 280px;
@@ -50,16 +48,22 @@
             height: 100vh;
             overflow: hidden;
             z-index: 50;
-            transition: transform 0.3s ease, width 0.3s ease;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
-        #sidebar.hidden {
-            transform: translateX(-100%);
-            width: 0;
-            min-width: 0;
+        /* SIDEBAR HILANG DI DESKTOP (pakai class ini) */
+        #sidebar.desktop-hidden {
+            width: 0 !important;
+            min-width: 0 !important;
+            overflow: hidden;
+            border-right: none;
+            padding: 0;
+            margin: 0;
+            flex-shrink: 0;
         }
 
-        /* Mobile: sidebar default hidden */
+        /* ── SIDEBAR MOBILE ── */
         @media (max-width: 768px) {
             #sidebar {
                 position: fixed;
@@ -70,6 +74,7 @@
                 width: 280px;
                 min-width: 280px;
                 z-index: 100;
+                border-right: 1px solid rgba(255,255,255,0.05);
             }
             #sidebar.mobile-open {
                 transform: translateX(0);
@@ -86,6 +91,7 @@
             }
         }
 
+        /* ── CHAT AREA ── */
         #chat-area {
             flex: 1;
             display: flex;
@@ -96,7 +102,7 @@
             min-width: 0;
         }
 
-        /* === CHAT MESSAGES === */
+        /* ── CHAT MESSAGES ── */
         #chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -140,7 +146,7 @@
         .avatar-ring.user { background: rgba(255, 255, 255, 0.08); }
         .avatar-ring.ai { background: rgba(255, 255, 255, 0.04); }
 
-        /* === INPUT === */
+        /* ── INPUT ── */
         #chat-input-wrap {
             padding: 12px 24px 24px;
             background: transparent;
@@ -196,15 +202,11 @@
             font-size: 0.85rem;
             gap: 4px;
         }
-        #send-btn:hover {
-            background: rgba(255, 255, 255, 0.16);
-        }
-        #send-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+        #send-btn:hover { background: rgba(255, 255, 255, 0.16); }
+        #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #stop-btn { color: #ff6b6b; }
 
-        /* === SUGGESTION CARDS === */
+        /* ── SUGGESTION CARDS ── */
         .suggestion-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -233,7 +235,7 @@
         }
         .suggestion-card .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        /* === LOGO === */
+        /* ── LOGO ── */
         .logo-text {
             font-weight: 700;
             font-size: 1.2rem;
@@ -293,14 +295,12 @@
         }
         .model-select option { background: #181818; color: #eee; }
 
-        /* === FADE IN === */
+        /* ── ANIMATIONS ── */
         .fade-in { animation: fadeIn 0.35s ease forwards; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* === TYPING DOTS === */
         .typing-dot {
             display: inline-block;
             width: 7px;
@@ -318,7 +318,7 @@
             30% { transform: translateY(-8px); opacity: 1; }
         }
 
-        /* === MOBILE RESPONSIVE === */
+        /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             #chat-messages { padding: 16px 14px 8px; }
             #chat-input-wrap { padding: 8px 12px 16px; }
@@ -328,6 +328,13 @@
                 max-width: 100%;
             }
             .bubble-user, .bubble-ai { max-width: 92%; }
+        }
+        @media (max-width: 480px) {
+            .suggestion-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .suggestion-card { padding: 10px 10px; font-size: 0.75rem; }
+            #chat-input-inner { padding: 6px 8px; border-radius: 16px; }
+            #chat-input-inner textarea { font-size: 0.85rem; min-height: 22px; }
+            #send-btn { padding: 6px 10px; font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -366,22 +373,22 @@
         </div>
 
         <div class="border-t border-white/5 p-3 flex-shrink-0 space-y-0.5">
-            <div class="sidebar-link" onclick="alert('Settings')">
+            <div class="sidebar-link" id="settings-btn">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 Settings
             </div>
-            <div class="sidebar-link" onclick="alert('Help')">
+            <div class="sidebar-link" id="help-btn">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Help
             </div>
-            <div class="sidebar-link" onclick="alert('Upgrade to Pro')">
+            <div class="sidebar-link" id="upgrade-btn">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                 Upgrade
                 <span class="badge-pro ml-auto">Pro</span>
             </div>
-            <div class="sidebar-link" id="collapse-btn">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
-                Collapse
+            <div class="sidebar-link" id="toggle-sidebar-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                Hide Sidebar
             </div>
         </div>
     </aside>
@@ -391,10 +398,13 @@
         <!-- HEADER -->
         <header class="flex items-center justify-between px-4 py-2.5 border-b border-white/5 flex-shrink-0" style="background:#0A0A0A/80;">
             <div class="flex items-center gap-3">
-                <button id="menu-toggle" class="lg:hidden p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition">
+                <button id="menu-toggle" class="p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition lg:hidden">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <span class="logo-text text-base hidden lg:block">Zeph AI</span>
+                <button id="desktop-toggle-btn" class="p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition hidden lg:block">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <span class="logo-text text-base">Zeph AI</span>
                 <select id="model-select" class="model-select">
                     <option value="llama3-70b-8192">Llama 3 70B</option>
                     <option value="mixtral-8x7b-32768" selected>Mixtral 8x7B</option>
@@ -456,7 +466,7 @@
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     Send
                 </button>
-                <button id="stop-btn" class="text-white/40 hover:text-white/80 hidden" title="Stop generating">
+                <button id="stop-btn" class="hidden" title="Stop generating">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                 </button>
             </div>
