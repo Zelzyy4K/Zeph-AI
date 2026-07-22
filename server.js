@@ -76,7 +76,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// === INI YANG PALING PENTING: FALLBACK UNTUK SEMUA ROUTE ===
+// FALLBACK: Semua route ke index.html
 app.get('*', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
