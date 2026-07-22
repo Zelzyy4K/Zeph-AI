@@ -31,14 +31,14 @@
     const clearBtn = $('clear-btn');
     const newChatBtn = $('new-chat-btn');
     const menuToggle = $('menu-toggle');
+    const desktopToggle = $('desktop-toggle-btn');
     const modelSelect = $('model-select');
     const darkToggle = $('dark-toggle');
     const historyList = $('history-list');
     const favList = $('fav-list');
     const searchInput = $('search-chat');
     const charCounter = $('char-counter');
-    const collapseBtn = $('collapse-btn');
-    const sidebarToggleBtn = $('sidebar-toggle-btn');
+    const toggleSidebarBtn = $('toggle-sidebar-btn');
 
     let sidebarVisible = true;
 
@@ -405,25 +405,32 @@
     // ── SIDEBAR TOGGLE ──
     function toggleSidebar() {
         if (window.innerWidth <= 768) {
+            // Mode mobile
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
         } else {
+            // Mode desktop
             sidebarVisible = !sidebarVisible;
             if (sidebarVisible) {
-                sidebar.classList.remove('desktop-collapsed');
+                sidebar.classList.remove('desktop-hidden');
                 sidebar.style.width = '280px';
                 sidebar.style.minWidth = '280px';
                 sidebar.style.overflow = 'hidden';
                 sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
-                sidebar.style.flexShrink = '0';
+                document.getElementById('toggle-sidebar-btn').innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    Hide Sidebar
+                `;
             } else {
-                sidebar.classList.add('desktop-collapsed');
+                sidebar.classList.add('desktop-hidden');
                 sidebar.style.width = '0';
                 sidebar.style.minWidth = '0';
                 sidebar.style.overflow = 'hidden';
                 sidebar.style.borderRight = 'none';
-                sidebar.style.padding = '0';
-                sidebar.style.flexShrink = '0';
+                document.getElementById('toggle-sidebar-btn').innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    Show Sidebar
+                `;
             }
         }
     }
@@ -503,6 +510,21 @@
         return truncate(plain, 50);
     }
 
+    // ── SETTINGS ──
+    function showSettings() {
+        alert('⚙️ Settings\n\nTheme: Dark\nLanguage: Indonesia\nFont Size: 15px\nChat History: ON\nAuto Scroll: ON\nStreaming: ON');
+    }
+
+    // ── HELP ──
+    function showHelp() {
+        alert('💡 Zeph AI Help\n\n• Enter untuk kirim\n• Shift+Enter untuk baris baru\n• ⭐ untuk favorit\n• Export/Import chat di header');
+    }
+
+    // ── UPGRADE ──
+    function showUpgrade() {
+        alert('🚀 Upgrade ke Zeph Pro\n\n✅ Respons lebih cepat\n✅ Model Vision\n✅ Prioritas antrian\n✅ Chat tanpa batas');
+    }
+
     // ── INIT ──
     function init() {
         const hasSaved = loadState();
@@ -537,17 +559,11 @@
         // New Chat
         newChatBtn.addEventListener('click', newChat);
 
-        // Sidebar Toggle - pakai satu tombol untuk semua
-        if (sidebarToggleBtn) {
-            sidebarToggleBtn.addEventListener('click', toggleSidebar);
-        }
-        if (menuToggle) {
-            menuToggle.addEventListener('click', toggleSidebar);
-        }
-        if (collapseBtn) {
-            collapseBtn.addEventListener('click', toggleSidebar);
-        }
-        overlay.addEventListener('click', closeSidebarMobile);
+        // Sidebar Toggle - semua tombol
+        if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+        if (desktopToggle) desktopToggle.addEventListener('click', toggleSidebar);
+        if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', toggleSidebar);
+        if (overlay) overlay.addEventListener('click', closeSidebarMobile);
 
         // Model
         modelSelect.addEventListener('change', () => { state.model = modelSelect.value; saveState(); });
@@ -557,7 +573,6 @@
             const isLight = document.body.style.background === '#f5f5f5';
             document.body.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
             document.body.style.color = isLight ? '#FFFFFF' : '#111';
-            // Update chat area
             const chatArea = document.getElementById('chat-area');
             if (chatArea) chatArea.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
         });
@@ -572,7 +587,10 @@
         searchInput.addEventListener('input', renderAll);
 
         // Profile
-        document.getElementById('profile-btn').addEventListener('click', () => alert('Profile Settings'));
+        document.getElementById('profile-btn').addEventListener('click', showSettings);
+        document.getElementById('settings-btn').addEventListener('click', showSettings);
+        document.getElementById('help-btn').addEventListener('click', showHelp);
+        document.getElementById('upgrade-btn').addEventListener('click', showUpgrade);
 
         // Suggestion cards
         document.querySelectorAll('.suggestion-card').forEach(card => {
@@ -679,14 +697,18 @@
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
-                // Kembalikan sidebar ke visible di desktop
+                // Pastikan sidebar visible di desktop
                 if (!sidebarVisible) {
                     sidebarVisible = true;
-                    sidebar.classList.remove('desktop-collapsed');
+                    sidebar.classList.remove('desktop-hidden');
                     sidebar.style.width = '280px';
                     sidebar.style.minWidth = '280px';
                     sidebar.style.overflow = 'hidden';
                     sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                    document.getElementById('toggle-sidebar-btn').innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        Hide Sidebar
+                    `;
                 }
             }
         });
