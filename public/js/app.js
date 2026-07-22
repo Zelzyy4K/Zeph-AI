@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL)
+// Zeph AI - Frontend Logic (FINAL WITH FULL SETTINGS)
 (function() {
     'use strict';
 
@@ -12,7 +12,14 @@
         favorites: [],
         settings: {
             theme: 'dark',
+            lang: 'id',
+            fontSize: 15,
+            chatHistory: true,
             autoScroll: true,
+            streaming: true,
+            sidebarWidth: 280,
+            bubbleRadius: 18,
+            animSpeed: 'normal',
         }
     };
 
@@ -75,6 +82,7 @@
                 favorites: state.favorites,
                 currentChatId: state.currentChatId,
                 model: state.model,
+                settings: state.settings,
             };
             localStorage.setItem('zeph_state', JSON.stringify(data));
         } catch {}
@@ -90,12 +98,46 @@
             state.favorites = data.favorites || [];
             state.currentChatId = data.currentChatId || null;
             state.model = data.model || 'mixtral-8x7b-32768';
+            state.settings = { ...state.settings, ...(data.settings || {}) };
             return true;
         } catch { return false; }
     }
 
+    // ── APPLY SETTINGS ──
+    function applySettings() {
+        // Theme
+        if (state.settings.theme === 'light') {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
+
+        // Font Size
+        document.documentElement.style.fontSize = state.settings.fontSize + 'px';
+
+        // Sidebar Width
+        if (sidebarVisible) {
+            sidebar.style.width = state.settings.sidebarWidth + 'px';
+            sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
+        }
+
+        // Bubble Radius - akan diapply saat render messages
+        // Animation Speed
+        const speed = state.settings.animSpeed;
+        const dur = speed === 'fast' ? '0.15s' : speed === 'slow' ? '0.6s' : '0.3s';
+        document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el => {
+            el.style.transitionDuration = dur;
+        });
+
+        // Auto Scroll sudah di handle di renderMessages
+        // Chat History sudah di handle di loadState
+
+        saveState();
+    }
+
     // ── HISTORY ──
     function addHistory(chatId, title, lastMsg) {
+        if (!state.settings.chatHistory) return;
         const existing = state.history.find(h => h.id === chatId);
         if (existing) {
             existing.title = title;
@@ -250,12 +292,13 @@
             const content = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
             const tokenCount = countTokens(msg.content);
             const wordCount = countWords(msg.content);
+            const radius = state.settings.bubbleRadius || 18;
 
             html += `
                 <div class="message-group fade-in" data-id="${msg.id || idx}">
                     <div class="flex ${alignClass} gap-2.5">
                         <div class="avatar-ring ${avatarClass}">${avatar}</div>
-                        <div class="${bubbleClass}">
+                        <div class="${bubbleClass}" style="border-radius: ${radius}px;">
                             ${content}
                             <div class="text-[10px] text-white/20 mt-1 flex items-center gap-3 flex-wrap">
                                 <span>${formatTime(msg.timestamp || Date.now())}</span>
@@ -270,7 +313,6 @@
         msgContainer.innerHTML = html;
         highlightCodeBlocks(msgContainer);
 
-        // Copy code buttons
         msgContainer.querySelectorAll('pre code').forEach((block) => {
             const pre = block.closest('pre');
             if (!pre) return;
@@ -338,7 +380,7 @@
             const response = await fetch(`${API_BASE}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: chatHistory, model: state.model, stream: true }),
+                body: JSON.stringify({ messages: chatHistory, model: state.model, stream: state.settings.streaming !== false }),
             });
 
             if (!response.ok) {
@@ -346,33 +388,37 @@
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let fullText = '';
-            let done = false;
+            if (state.settings.streaming !== false) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+                let done = false;
 
-            while (!done) {
-                const { value, done: doneReading } = await reader.read();
-                done = doneReading;
-                if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
-                for (const line of lines) {
-                    const data = line.slice(6).trim();
-                    if (data === '[DONE]') continue;
-                    try {
-                        const json = JSON.parse(data);
-                        if (json.content) {
-                            fullText += json.content;
-                            aiMsg.content = fullText;
-                            renderMessages();
-                            if (state.settings.autoScroll) chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }
-                    } catch {}
+                while (!done) {
+                    const { value, done: doneReading } = await reader.read();
+                    done = doneReading;
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+                    for (const line of lines) {
+                        const data = line.slice(6).trim();
+                        if (data === '[DONE]') continue;
+                        try {
+                            const json = JSON.parse(data);
+                            if (json.content) {
+                                fullText += json.content;
+                                aiMsg.content = fullText;
+                                renderMessages();
+                                if (state.settings.autoScroll) chatMessages.scrollTop = chatMessages.scrollHeight;
+                            }
+                        } catch {}
+                    }
                 }
+                if (fullText === '') aiMsg.content = '[Tidak ada respons dari AI]';
+            } else {
+                const data = await response.json();
+                aiMsg.content = data.content || '[Tidak ada respons]';
             }
-
-            if (fullText === '') aiMsg.content = '[Tidak ada respons dari AI]';
             renderMessages();
 
         } catch (error) {
@@ -405,18 +451,16 @@
     // ── SIDEBAR TOGGLE ──
     function toggleSidebar() {
         if (window.innerWidth <= 768) {
-            // Mode mobile
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
         } else {
-            // Mode desktop
             sidebarVisible = !sidebarVisible;
             if (sidebarVisible) {
                 sidebar.classList.remove('desktop-hidden');
-                sidebar.style.width = '280px';
-                sidebar.style.minWidth = '280px';
+                sidebar.style.width = state.settings.sidebarWidth + 'px';
+                sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
                 sidebar.style.overflow = 'hidden';
-                sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                sidebar.style.borderRight = '1px solid rgba(255,255,255,0.05)';
                 document.getElementById('toggle-sidebar-btn').innerHTML = `
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     Hide Sidebar
@@ -511,8 +555,41 @@
     }
 
     // ── SETTINGS ──
-    function showSettings() {
-        alert('⚙️ Settings\n\nTheme: Dark\nLanguage: Indonesia\nFont Size: 15px\nChat History: ON\nAuto Scroll: ON\nStreaming: ON');
+    function openSettings() {
+        const overlay = document.getElementById('settings-overlay');
+        overlay.classList.add('active');
+        // Sync values
+        document.getElementById('set-theme').value = state.settings.theme || 'dark';
+        document.getElementById('set-lang').value = state.settings.lang || 'id';
+        document.getElementById('set-fontsize').value = state.settings.fontSize || 15;
+        document.getElementById('fontsize-label').textContent = (state.settings.fontSize || 15) + 'px';
+        document.getElementById('set-history').checked = state.settings.chatHistory !== false;
+        document.getElementById('set-autoscroll').checked = state.settings.autoScroll !== false;
+        document.getElementById('set-streaming').checked = state.settings.streaming !== false;
+        document.getElementById('set-sidebarwidth').value = state.settings.sidebarWidth || 280;
+        document.getElementById('set-bubbleradius').value = state.settings.bubbleRadius || 18;
+        document.getElementById('set-animspeed').value = state.settings.animSpeed || 'normal';
+    }
+
+    function closeSettings() {
+        document.getElementById('settings-overlay').classList.remove('active');
+    }
+
+    function saveSettings() {
+        state.settings.theme = document.getElementById('set-theme').value;
+        state.settings.lang = document.getElementById('set-lang').value;
+        state.settings.fontSize = parseInt(document.getElementById('set-fontsize').value);
+        state.settings.chatHistory = document.getElementById('set-history').checked;
+        state.settings.autoScroll = document.getElementById('set-autoscroll').checked;
+        state.settings.streaming = document.getElementById('set-streaming').checked;
+        state.settings.sidebarWidth = parseInt(document.getElementById('set-sidebarwidth').value);
+        state.settings.bubbleRadius = parseInt(document.getElementById('set-bubbleradius').value);
+        state.settings.animSpeed = document.getElementById('set-animspeed').value;
+        
+        applySettings();
+        renderMessages(); // Re-render untuk bubble radius
+        closeSettings();
+        saveState();
     }
 
     // ── HELP ──
@@ -528,6 +605,8 @@
     // ── INIT ──
     function init() {
         const hasSaved = loadState();
+        applySettings();
+
         modelSelect.value = state.model || 'mixtral-8x7b-32768';
         renderAll();
 
@@ -568,13 +647,11 @@
         // Model
         modelSelect.addEventListener('change', () => { state.model = modelSelect.value; saveState(); });
 
-        // Dark mode
+        // Dark mode (manual toggle)
         darkToggle.addEventListener('click', () => {
-            const isLight = document.body.style.background === '#f5f5f5';
-            document.body.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
-            document.body.style.color = isLight ? '#FFFFFF' : '#111';
-            const chatArea = document.getElementById('chat-area');
-            if (chatArea) chatArea.style.background = isLight ? '#0A0A0A' : '#f5f5f5';
+            state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+            applySettings();
+            saveState();
         });
 
         // Clear
@@ -586,9 +663,17 @@
         // Search
         searchInput.addEventListener('input', renderAll);
 
-        // Profile
-        document.getElementById('profile-btn').addEventListener('click', showSettings);
-        document.getElementById('settings-btn').addEventListener('click', showSettings);
+        // Profile & Settings
+        document.getElementById('profile-btn').addEventListener('click', openSettings);
+        document.getElementById('settings-btn').addEventListener('click', openSettings);
+        document.getElementById('settings-close').addEventListener('click', closeSettings);
+        document.getElementById('settings-cancel').addEventListener('click', closeSettings);
+        document.getElementById('settings-save').addEventListener('click', saveSettings);
+        document.getElementById('settings-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeSettings();
+        });
+
+        // Help & Upgrade
         document.getElementById('help-btn').addEventListener('click', showHelp);
         document.getElementById('upgrade-btn').addEventListener('click', showUpgrade);
 
@@ -697,14 +782,13 @@
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
-                // Pastikan sidebar visible di desktop
                 if (!sidebarVisible) {
                     sidebarVisible = true;
                     sidebar.classList.remove('desktop-hidden');
-                    sidebar.style.width = '280px';
-                    sidebar.style.minWidth = '280px';
+                    sidebar.style.width = state.settings.sidebarWidth + 'px';
+                    sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
                     sidebar.style.overflow = 'hidden';
-                    sidebar.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                    sidebar.style.borderRight = '1px solid rgba(255,255,255,0.05)';
                     document.getElementById('toggle-sidebar-btn').innerHTML = `
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                         Hide Sidebar
