@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL WITH FULL SETTINGS)
+// Zeph AI - Frontend Logic (FINAL WITH FIXED BUBBLE POSITION)
 (function() {
     'use strict';
 
@@ -121,16 +121,12 @@
             sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
         }
 
-        // Bubble Radius - akan diapply saat render messages
         // Animation Speed
         const speed = state.settings.animSpeed;
         const dur = speed === 'fast' ? '0.15s' : speed === 'slow' ? '0.6s' : '0.3s';
         document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el => {
             el.style.transitionDuration = dur;
         });
-
-        // Auto Scroll sudah di handle di renderMessages
-        // Chat History sudah di handle di loadState
 
         saveState();
     }
@@ -271,7 +267,7 @@
         }
     }
 
-    // ── RENDER MESSAGES ──
+    // ── RENDER MESSAGES (DENGAN BUBBLE POSISI YANG BENAR) ──
     function renderMessages() {
         if (!msgContainer) return;
         const hasMessages = state.messages.length > 0;
@@ -287,16 +283,18 @@
             const isUser = msg.role === 'user';
             const avatar = isUser ? 'U' : 'Z';
             const avatarClass = isUser ? 'user' : 'ai';
-            const bubbleClass = isUser ? 'bubble-user self-end' : 'bubble-ai self-start';
-            const alignClass = isUser ? 'items-end' : 'items-start';
+            const bubbleClass = isUser ? 'bubble-user' : 'bubble-ai';
+            const radius = state.settings.bubbleRadius || 18;
             const content = isUser ? escapeHtml(msg.content) : renderMarkdown(msg.content);
             const tokenCount = countTokens(msg.content);
             const wordCount = countWords(msg.content);
-            const radius = state.settings.bubbleRadius || 18;
 
+            // POSISI BUBBLE:
+            // - User: di kanan (flex-row-reverse + items-end)
+            // - AI: di kiri (flex-row + items-start)
             html += `
-                <div class="message-group fade-in" data-id="${msg.id || idx}">
-                    <div class="flex ${alignClass} gap-2.5">
+                <div class="message-group ${isUser ? 'message-user' : 'message-ai'} fade-in" data-id="${msg.id || idx}">
+                    <div class="flex ${isUser ? 'flex-row-reverse' : 'flex-row'} gap-2.5 w-full ${isUser ? 'justify-end' : 'justify-start'}">
                         <div class="avatar-ring ${avatarClass}">${avatar}</div>
                         <div class="${bubbleClass}" style="border-radius: ${radius}px;">
                             ${content}
@@ -558,7 +556,6 @@
     function openSettings() {
         const overlay = document.getElementById('settings-overlay');
         overlay.classList.add('active');
-        // Sync values
         document.getElementById('set-theme').value = state.settings.theme || 'dark';
         document.getElementById('set-lang').value = state.settings.lang || 'id';
         document.getElementById('set-fontsize').value = state.settings.fontSize || 15;
@@ -587,7 +584,7 @@
         state.settings.animSpeed = document.getElementById('set-animspeed').value;
         
         applySettings();
-        renderMessages(); // Re-render untuk bubble radius
+        renderMessages();
         closeSettings();
         saveState();
     }
@@ -615,7 +612,6 @@
 
         // ── EVENTS ──
 
-        // Send
         sendBtn.addEventListener('click', () => {
             const text = chatInput.value;
             if (text.trim() && !state.isGenerating) sendMessage(text);
@@ -635,35 +631,28 @@
             charCounter.textContent = chatInput.value.length;
         });
 
-        // New Chat
         newChatBtn.addEventListener('click', newChat);
 
-        // Sidebar Toggle - semua tombol
         if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
         if (desktopToggle) desktopToggle.addEventListener('click', toggleSidebar);
         if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', toggleSidebar);
         if (overlay) overlay.addEventListener('click', closeSidebarMobile);
 
-        // Model
         modelSelect.addEventListener('change', () => { state.model = modelSelect.value; saveState(); });
 
-        // Dark mode (manual toggle)
         darkToggle.addEventListener('click', () => {
             state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
             applySettings();
             saveState();
         });
 
-        // Clear
         clearBtn.addEventListener('click', () => {
             if (state.messages.length === 0) return;
             if (confirm('Hapus semua pesan?')) { state.messages = []; renderMessages(); saveState(); saveChatMessages(); }
         });
 
-        // Search
         searchInput.addEventListener('input', renderAll);
 
-        // Profile & Settings
         document.getElementById('profile-btn').addEventListener('click', openSettings);
         document.getElementById('settings-btn').addEventListener('click', openSettings);
         document.getElementById('settings-close').addEventListener('click', closeSettings);
@@ -673,11 +662,9 @@
             if (e.target === e.currentTarget) closeSettings();
         });
 
-        // Help & Upgrade
         document.getElementById('help-btn').addEventListener('click', showHelp);
         document.getElementById('upgrade-btn').addEventListener('click', showUpgrade);
 
-        // Suggestion cards
         document.querySelectorAll('.suggestion-card').forEach(card => {
             card.addEventListener('click', () => {
                 const prompt = card.dataset.prompt || card.textContent.trim();
@@ -690,7 +677,6 @@
             });
         });
 
-        // Emoji
         document.getElementById('emoji-btn').addEventListener('click', () => {
             const emojis = ['😊','🔥','✨','🚀','💡','🎯','📌','✅','🎉','💪','🤖','🧠'];
             const pick = emojis[Math.floor(Math.random() * emojis.length)];
@@ -701,7 +687,6 @@
             chatInput.focus();
         });
 
-        // Upload
         document.getElementById('upload-btn').addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -736,7 +721,6 @@
             };
         });
 
-        // Voice
         document.getElementById('voice-btn').addEventListener('click', () => {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -757,19 +741,16 @@
             }
         });
 
-        // Export/Import
         document.getElementById('export-txt').addEventListener('click', () => exportChat('txt'));
         document.getElementById('export-md').addEventListener('click', () => exportChat('md'));
         document.getElementById('import-btn').addEventListener('click', importChat);
 
-        // Stop button
         stopBtn.addEventListener('click', () => {
             state.isGenerating = false;
             sendBtn.disabled = false;
             stopBtn.classList.add('hidden');
         });
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); newChat(); }
             if (e.key === 'Escape') closeSidebarMobile();
@@ -777,7 +758,6 @@
 
         chatInput.focus();
 
-        // Resize handler
         window.addEventListener('resize', () => {
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('mobile-open');
