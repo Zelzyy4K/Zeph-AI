@@ -79,6 +79,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Route untuk halaman utama
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
 // ─── Start Server ───
 app.listen(PORT, () => {
   console.log(`🚀 Zeph AI Server running on http://localhost:${PORT}`);
