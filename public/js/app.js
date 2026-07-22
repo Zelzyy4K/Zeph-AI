@@ -1,8 +1,8 @@
-// Zeph AI - Frontend Logic (RAPIH VERSION)
+// Zeph AI - Frontend Logic (FINAL - RAPI)
 (function() {
     'use strict';
 
-    // ─── STATE ────────────────────────────────────────────────
+    // ── STATE ──
     const state = {
         messages: [],
         currentChatId: null,
@@ -19,13 +19,13 @@
             streaming: true,
             sidebarWidth: 280,
             bubbleRadius: 18,
-            animSpeed: 'normal'
+            animSpeed: 'normal',
         }
     };
 
     const API_BASE = window.location.origin;
 
-    // ─── DOM REFS ──────────────────────────────────────────────
+    // ── DOM REFS ──
     const $ = id => document.getElementById(id);
     const sidebar = $('sidebar');
     const overlay = $('sidebar-overlay');
@@ -48,7 +48,7 @@
 
     let sidebarVisible = true;
 
-    // ─── UTILITIES ─────────────────────────────────────────────
+    // ── UTILITIES ──
     function uid() {
         return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
     }
@@ -92,11 +92,13 @@
 
     function highlightCodeBlocks(container) {
         container.querySelectorAll('pre code').forEach(block => {
-            try { hljs.highlightElement(block); } catch {}
+            try {
+                hljs.highlightElement(block);
+            } catch {}
         });
     }
 
-    // ─── SAVE / LOAD ───────────────────────────────────────────
+    // ── SAVE / LOAD ──
     function saveState() {
         try {
             localStorage.setItem('zeph_state', JSON.stringify({
@@ -127,35 +129,27 @@
         }
     }
 
-    // ─── APPLY SETTINGS ────────────────────────────────────────
+    // ── APPLY SETTINGS ──
     function applySettings() {
-        // Theme
         if (state.settings.theme === 'light') {
             document.body.classList.add('light-mode');
         } else {
             document.body.classList.remove('light-mode');
         }
-
-        // Font Size
         document.documentElement.style.fontSize = state.settings.fontSize + 'px';
-
-        // Sidebar Width
         if (sidebarVisible) {
             sidebar.style.width = state.settings.sidebarWidth + 'px';
             sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
         }
-
-        // Animation Speed
         const speed = state.settings.animSpeed;
         const dur = speed === 'fast' ? '0.15s' : speed === 'slow' ? '0.6s' : '0.3s';
         document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el => {
             el.style.transitionDuration = dur;
         });
-
         saveState();
     }
 
-    // ─── HISTORY ───────────────────────────────────────────────
+    // ── HISTORY ──
     function addHistory(chatId, title, lastMsg) {
         if (!state.settings.chatHistory) return;
         const existing = state.history.find(h => h.id === chatId);
@@ -189,11 +183,8 @@
 
     function toggleFavorite(chatId) {
         const idx = state.favorites.indexOf(chatId);
-        if (idx > -1) {
-            state.favorites.splice(idx, 1);
-        } else {
-            state.favorites.push(chatId);
-        }
+        if (idx > -1) state.favorites.splice(idx, 1);
+        else state.favorites.push(chatId);
         saveState();
         renderAll();
     }
@@ -203,7 +194,7 @@
         return h ? h.title : 'Chat baru';
     }
 
-    // ─── RENDER ─────────────────────────────────────────────────
+    // ── RENDER ──
     function renderAll() {
         renderHistory();
         renderFavorites();
@@ -213,20 +204,17 @@
         if (!historyList) return;
         const search = searchInput.value.toLowerCase();
         let items = state.history;
-
         if (search) {
             items = items.filter(h =>
                 h.title.toLowerCase().includes(search) ||
                 (h.lastMessage && h.lastMessage.toLowerCase().includes(search))
             );
         }
-
         if (items.length === 0) {
             historyList.innerHTML =
                 `<div class="text-white/20 text-xs text-center py-4">${search ? 'Tidak ditemukan' : 'Belum ada chat'}</div>`;
             return;
         }
-
         historyList.innerHTML = items.map(h => {
             const isFav = state.favorites.includes(h.id);
             const isActive = h.id === state.currentChatId;
@@ -248,35 +236,27 @@
                 if (e.target.closest('.actions')) return;
                 loadChat(id);
             });
-
             const favBtn = el.querySelector('[data-action="fav"]');
-            if (favBtn) {
-                favBtn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    toggleFavorite(id);
-                });
-            }
-
+            if (favBtn) favBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                toggleFavorite(id);
+            });
             const delBtn = el.querySelector('[data-action="delete"]');
-            if (delBtn) {
-                delBtn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    if (confirm('Hapus chat ini?')) deleteHistory(id);
-                });
-            }
+            if (delBtn) delBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                if (confirm('Hapus chat ini?')) deleteHistory(id);
+            });
         });
     }
 
     function renderFavorites() {
         if (!favList) return;
         const favs = state.favorites;
-
         if (favs.length === 0) {
             favList.innerHTML =
                 `<div class="history-item text-white/30 italic text-xs">Belum ada favorit</div>`;
             return;
         }
-
         favList.innerHTML = favs.map(id => {
             const h = state.history.find(h => h.id === id);
             if (!h) return '';
@@ -297,22 +277,23 @@
                 if (e.target.closest('.actions')) return;
                 loadChat(id);
             });
-
             const unfav = el.querySelector('[data-action="unfav"]');
-            if (unfav) {
-                unfav.addEventListener('click', e => {
-                    e.stopPropagation();
-                    toggleFavorite(id);
-                });
-            }
+            if (unfav) unfav.addEventListener('click', e => {
+                e.stopPropagation();
+                toggleFavorite(id);
+            });
         });
     }
 
-    // ─── LOAD CHAT ──────────────────────────────────────────────
+    // ── LOAD CHAT ──
     function loadChat(chatId) {
         const saved = localStorage.getItem(`zeph_chat_${chatId}`);
         if (saved) {
-            try { state.messages = JSON.parse(saved); } catch { state.messages = []; }
+            try {
+                state.messages = JSON.parse(saved);
+            } catch {
+                state.messages = [];
+            }
         } else {
             state.messages = [];
         }
@@ -328,20 +309,18 @@
         }
     }
 
-    // ─── RENDER MESSAGES ────────────────────────────────────────
+    // ── RENDER MESSAGES ──
     function renderMessages() {
         if (!msgContainer) return;
         const hasMessages = state.messages.length > 0;
-
         if (!hasMessages) {
             welcomeScreen.style.display = 'flex';
             msgContainer.innerHTML = '';
             return;
         }
-
         welcomeScreen.style.display = 'none';
-        let html = '';
 
+        let html = '';
         state.messages.forEach((msg, idx) => {
             const isUser = msg.role === 'user';
             const avatar = isUser ? 'U' : 'Z';
@@ -374,7 +353,6 @@
         msgContainer.querySelectorAll('pre code').forEach((block) => {
             const pre = block.closest('pre');
             if (!pre) return;
-
             const btn = document.createElement('button');
             btn.className =
                 'absolute top-2 right-2 text-xs text-white/30 hover:text-white/70 bg-black/40 px-2 py-1 rounded border border-white/10 transition';
@@ -384,7 +362,6 @@
             btn.style.right = '8px';
             pre.style.position = 'relative';
             pre.appendChild(btn);
-
             btn.addEventListener('click', () => {
                 const code = block.textContent || '';
                 navigator.clipboard.writeText(code).then(() => {
@@ -399,12 +376,11 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }, 50);
         }
-
         saveChatMessages();
         saveState();
     }
 
-    // ─── SEND MESSAGE ───────────────────────────────────────────
+    // ── SEND MESSAGE ──
     async function sendMessage(text, isEdit = false) {
         if (!text || !text.trim()) return;
         const content = text.trim();
@@ -439,7 +415,7 @@
         if (!isEdit) await callAI(content);
     }
 
-    // ─── CALL AI ─────────────────────────────────────────────────
+    // ── CALL AI ──
     async function callAI(userContent) {
         if (state.isGenerating) return;
         state.isGenerating = true;
@@ -456,18 +432,20 @@
         renderMessages();
 
         try {
-            const chatHistory = state.messages
-                .filter(m => m.content)
-                .map(m => ({ role: m.role, content: m.content }));
-
+            const chatHistory = state.messages.filter(m => m.content).map(m => ({
+                role: m.role,
+                content: m.content
+            }));
             const response = await fetch(`${API_BASE}/api/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     messages: chatHistory,
                     model: state.model,
                     stream: state.settings.streaming !== false
-                })
+                }),
             });
 
             if (!response.ok) {
@@ -485,10 +463,8 @@
                     const { value, done: doneReading } = await reader.read();
                     done = doneReading;
                     if (done) break;
-
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
-
                     for (const line of lines) {
                         const data = line.slice(6).trim();
                         if (data === '[DONE]') continue;
@@ -498,22 +474,16 @@
                                 fullText += json.content;
                                 aiMsg.content = fullText;
                                 renderMessages();
-                                if (state.settings.autoScroll) {
-                                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                                }
+                                if (state.settings.autoScroll) chatMessages.scrollTop = chatMessages.scrollHeight;
                             }
                         } catch {}
                     }
                 }
-
-                if (fullText === '') {
-                    aiMsg.content = '[Tidak ada respons dari AI]';
-                }
+                if (fullText === '') aiMsg.content = '[Tidak ada respons dari AI]';
             } else {
                 const data = await response.json();
                 aiMsg.content = data.content || '[Tidak ada respons]';
             }
-
             renderMessages();
 
         } catch (error) {
@@ -524,25 +494,20 @@
             state.isGenerating = false;
             sendBtn.disabled = false;
             stopBtn.classList.add('hidden');
-
             const h = state.history.find(h => h.id === state.currentChatId);
             if (h) {
                 h.lastMessage = aiMsg.content || userContent;
                 h.updated = Date.now();
             }
-
             saveChatMessages();
             saveState();
             renderAll();
             renderMessages();
-
-            if (state.settings.autoScroll) {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
+            if (state.settings.autoScroll) chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
 
-    // ─── NEW CHAT ────────────────────────────────────────────────
+    // ── NEW CHAT ──
     function newChat() {
         state.messages = [];
         state.currentChatId = null;
@@ -554,38 +519,29 @@
         chatInput.focus();
     }
 
-    // ─── SIDEBAR TOGGLE ─────────────────────────────────────────
+    // ── SIDEBAR TOGGLE ──
     function toggleSidebar() {
         if (window.innerWidth <= 768) {
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
         } else {
             sidebarVisible = !sidebarVisible;
-
             if (sidebarVisible) {
                 sidebar.classList.remove('desktop-hidden');
                 sidebar.style.width = state.settings.sidebarWidth + 'px';
                 sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
                 sidebar.style.overflow = 'hidden';
                 sidebar.style.borderRight = '1px solid rgba(255,255,255,0.05)';
-                document.getElementById('toggle-sidebar-btn').innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                    Hide Sidebar
-                `;
+                document.getElementById('toggle-sidebar-btn').innerHTML =
+                    `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`;
             } else {
                 sidebar.classList.add('desktop-hidden');
                 sidebar.style.width = '0';
                 sidebar.style.minWidth = '0';
                 sidebar.style.overflow = 'hidden';
                 sidebar.style.borderRight = 'none';
-                document.getElementById('toggle-sidebar-btn').innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                    Show Sidebar
-                `;
+                document.getElementById('toggle-sidebar-btn').innerHTML =
+                    `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Show Sidebar`;
             }
         }
     }
@@ -597,27 +553,23 @@
         }
     }
 
-    // ─── EXPORT / IMPORT ─────────────────────────────────────────
+    // ── EXPORT / IMPORT ──
     function exportChat(format) {
         if (!state.currentChatId || state.messages.length === 0) {
             alert('Tidak ada chat yang aktif.');
             return;
         }
-
         const title = getChatTitle(state.currentChatId);
         let content = '';
-
         if (format === 'txt') {
             content = state.messages.map(m =>
                 `${m.role === 'user' ? 'User' : 'Zeph AI'} (${formatTime(m.timestamp)}):\n${m.content}\n`
             ).join('\n');
         } else if (format === 'md') {
-            content = `# ${title}\n\n` +
-                state.messages.map(m =>
-                    `**${m.role === 'user' ? 'User' : 'Zeph AI'}** (${formatTime(m.timestamp)})\n\n${m.content}\n\n`
-                ).join('---\n\n');
+            content = `# ${title}\n\n` + state.messages.map(m =>
+                `**${m.role === 'user' ? 'User' : 'Zeph AI'}** (${formatTime(m.timestamp)})\n\n${m.content}\n\n`
+            ).join('---\n\n');
         }
-
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -631,11 +583,9 @@
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.txt,.md';
-
         input.onchange = (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
@@ -645,7 +595,6 @@
                         const newMessages = [];
                         let currentRole = 'user';
                         let currentContent = '';
-
                         for (const line of lines) {
                             if (line.startsWith('User') || line.startsWith('Zeph AI')) {
                                 if (currentContent) {
@@ -661,7 +610,6 @@
                                 currentContent += line + '\n';
                             }
                         }
-
                         if (currentContent) {
                             newMessages.push({
                                 role: currentRole,
@@ -669,7 +617,6 @@
                                 timestamp: Date.now()
                             });
                         }
-
                         if (newMessages.length > 0) {
                             if (!state.currentChatId) state.currentChatId = uid();
                             state.messages = newMessages;
@@ -688,7 +635,6 @@
             };
             reader.readAsText(file);
         };
-
         input.click();
     }
 
@@ -697,11 +643,10 @@
         return truncate(plain, 50);
     }
 
-    // ─── SETTINGS ─────────────────────────────────────────────────
+    // ── SETTINGS ──
     function openSettings() {
         const overlay = document.getElementById('settings-overlay');
         overlay.classList.add('active');
-
         document.getElementById('set-theme').value = state.settings.theme || 'dark';
         document.getElementById('set-lang').value = state.settings.lang || 'id';
         document.getElementById('set-fontsize').value = state.settings.fontSize || 15;
@@ -735,7 +680,7 @@
         saveState();
     }
 
-    // ─── HELP / UPGRADE ──────────────────────────────────────────
+    // ── HELP & UPGRADE ──
     function showHelp() {
         alert('💡 Zeph AI Help\n\n• Enter untuk kirim\n• Shift+Enter untuk baris baru\n• ⭐ untuk favorit\n• Export/Import chat di header');
     }
@@ -744,7 +689,7 @@
         alert('🚀 Upgrade ke Zeph Pro\n\n✅ Respons lebih cepat\n✅ Model Vision\n✅ Prioritas antrian\n✅ Chat tanpa batas');
     }
 
-    // ─── INIT ────────────────────────────────────────────────────
+    // ── INIT ──
     function init() {
         const hasSaved = loadState();
         applySettings();
@@ -752,16 +697,13 @@
         modelSelect.value = state.model || 'mixtral-8x7b-32768';
         renderAll();
 
-        if (hasSaved && state.messages.length > 0) {
-            renderMessages();
-        } else {
+        if (hasSaved && state.messages.length > 0) renderMessages();
+        else {
             welcomeScreen.style.display = 'flex';
             msgContainer.innerHTML = '';
         }
 
-        // ─── EVENTS ──────────────────────────────────────────────
-
-        // Send
+        // ── EVENTS ──
         sendBtn.addEventListener('click', () => {
             const text = chatInput.value;
             if (text.trim() && !state.isGenerating) sendMessage(text);
@@ -781,28 +723,23 @@
             charCounter.textContent = chatInput.value.length;
         });
 
-        // New Chat
         newChatBtn.addEventListener('click', newChat);
 
-        // Sidebar
         if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
         if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', toggleSidebar);
         if (overlay) overlay.addEventListener('click', closeSidebarMobile);
 
-        // Model
         modelSelect.addEventListener('change', () => {
             state.model = modelSelect.value;
             saveState();
         });
 
-        // Dark Mode
         darkToggle.addEventListener('click', () => {
             state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
             applySettings();
             saveState();
         });
 
-        // Clear
         clearBtn.addEventListener('click', () => {
             if (state.messages.length === 0) return;
             if (confirm('Hapus semua pesan?')) {
@@ -813,10 +750,8 @@
             }
         });
 
-        // Search
         searchInput.addEventListener('input', renderAll);
 
-        // Settings
         document.getElementById('profile-btn').addEventListener('click', openSettings);
         document.getElementById('settings-btn').addEventListener('click', openSettings);
         document.getElementById('settings-close').addEventListener('click', closeSettings);
@@ -826,11 +761,9 @@
             if (e.target === e.currentTarget) closeSettings();
         });
 
-        // Help & Upgrade
         document.getElementById('help-btn').addEventListener('click', showHelp);
         document.getElementById('upgrade-btn').addEventListener('click', showUpgrade);
 
-        // Suggestion Cards
         document.querySelectorAll('.suggestion-card').forEach(card => {
             card.addEventListener('click', () => {
                 const prompt = card.dataset.prompt || card.textContent.trim();
@@ -843,7 +776,6 @@
             });
         });
 
-        // Emoji
         document.getElementById('emoji-btn').addEventListener('click', () => {
             const emojis = ['😊', '🔥', '✨', '🚀', '💡', '🎯', '📌', '✅', '🎉', '💪', '🤖', '🧠'];
             const pick = emojis[Math.floor(Math.random() * emojis.length)];
@@ -854,44 +786,40 @@
             chatInput.focus();
         });
 
-        // Upload
         document.getElementById('upload-btn').addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*,.pdf,.txt,.md';
             input.click();
-
             input.onchange = (e) => {
                 const file = e.target.files?.[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const content = ev.target?.result;
-                    if (typeof content === 'string') {
-                        chatInput.value += `\n[Upload: ${file.name}]\n${content.slice(0, 200)}...`;
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const content = ev.target?.result;
+                        if (typeof content === 'string') {
+                            chatInput.value += `\n[Upload: ${file.name}]\n${content.slice(0, 200)}...`;
+                        } else {
+                            chatInput.value += `\n[Upload: ${file.name}]`;
+                        }
+                        chatInput.style.height = 'auto';
+                        chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+                        charCounter.textContent = chatInput.value.length;
+                        chatInput.focus();
+                    };
+                    if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+                        reader.readAsText(file);
                     } else {
-                        chatInput.value += `\n[Upload: ${file.name}]`;
+                        chatInput.value += `\n[Upload: ${file.name} (gambar)]`;
+                        chatInput.style.height = 'auto';
+                        chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+                        charCounter.textContent = chatInput.value.length;
+                        chatInput.focus();
                     }
-                    chatInput.style.height = 'auto';
-                    chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
-                    charCounter.textContent = chatInput.value.length;
-                    chatInput.focus();
-                };
-
-                if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
-                    reader.readAsText(file);
-                } else {
-                    chatInput.value += `\n[Upload: ${file.name} (gambar)]`;
-                    chatInput.style.height = 'auto';
-                    chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
-                    charCounter.textContent = chatInput.value.length;
-                    chatInput.focus();
                 }
             };
         });
 
-        // Voice
         document.getElementById('voice-btn').addEventListener('click', () => {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -912,19 +840,16 @@
             }
         });
 
-        // Export/Import
         document.getElementById('export-txt').addEventListener('click', () => exportChat('txt'));
         document.getElementById('export-md').addEventListener('click', () => exportChat('md'));
         document.getElementById('import-btn').addEventListener('click', importChat);
 
-        // Stop
         stopBtn.addEventListener('click', () => {
             state.isGenerating = false;
             sendBtn.disabled = false;
             stopBtn.classList.add('hidden');
         });
 
-        // Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
@@ -935,12 +860,10 @@
 
         chatInput.focus();
 
-        // Resize
         window.addEventListener('resize', () => {
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
-
                 if (!sidebarVisible) {
                     sidebarVisible = true;
                     sidebar.classList.remove('desktop-hidden');
@@ -948,12 +871,8 @@
                     sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
                     sidebar.style.overflow = 'hidden';
                     sidebar.style.borderRight = '1px solid rgba(255,255,255,0.05)';
-                    document.getElementById('toggle-sidebar-btn').innerHTML = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                        Hide Sidebar
-                    `;
+                    document.getElementById('toggle-sidebar-btn').innerHTML =
+                        `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`;
                 }
             }
         });
@@ -961,11 +880,9 @@
         console.log('🚀 Zeph AI v2.0 ready!');
     }
 
-    // ─── START ────────────────────────────────────────────────────
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
-
 })();
