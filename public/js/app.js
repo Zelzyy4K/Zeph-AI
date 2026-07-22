@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL WITH FIXED BUBBLE POSITION)
+// Zeph AI - Frontend Logic (FIXED BUBBLE POSITION)
 (function() {
     'use strict';
 
@@ -105,29 +105,21 @@
 
     // ── APPLY SETTINGS ──
     function applySettings() {
-        // Theme
         if (state.settings.theme === 'light') {
             document.body.classList.add('light-mode');
         } else {
             document.body.classList.remove('light-mode');
         }
-
-        // Font Size
         document.documentElement.style.fontSize = state.settings.fontSize + 'px';
-
-        // Sidebar Width
         if (sidebarVisible) {
             sidebar.style.width = state.settings.sidebarWidth + 'px';
             sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
         }
-
-        // Animation Speed
         const speed = state.settings.animSpeed;
         const dur = speed === 'fast' ? '0.15s' : speed === 'slow' ? '0.6s' : '0.3s';
         document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el => {
             el.style.transitionDuration = dur;
         });
-
         saveState();
     }
 
@@ -267,7 +259,7 @@
         }
     }
 
-    // ── RENDER MESSAGES (DENGAN BUBBLE POSISI YANG BENAR) ──
+    // ── RENDER MESSAGES (BUBBLE USER KANAN, AI KIRI) ──
     function renderMessages() {
         if (!msgContainer) return;
         const hasMessages = state.messages.length > 0;
@@ -289,12 +281,10 @@
             const tokenCount = countTokens(msg.content);
             const wordCount = countWords(msg.content);
 
-            // POSISI BUBBLE:
-            // - User: di kanan (flex-row-reverse + items-end)
-            // - AI: di kiri (flex-row + items-start)
+            // 🔥 INI YANG FIX: User bubble di KANAN, AI bubble di KIRI
             html += `
                 <div class="message-group ${isUser ? 'message-user' : 'message-ai'} fade-in" data-id="${msg.id || idx}">
-                    <div class="flex ${isUser ? 'flex-row-reverse' : 'flex-row'} gap-2.5 w-full ${isUser ? 'justify-end' : 'justify-start'}">
+                    <div class="flex ${isUser ? 'flex-row-reverse' : 'flex-row'} gap-2.5 w-full">
                         <div class="avatar-ring ${avatarClass}">${avatar}</div>
                         <div class="${bubbleClass}" style="border-radius: ${radius}px;">
                             ${content}
@@ -589,12 +579,11 @@
         saveState();
     }
 
-    // ── HELP ──
+    // ── HELP & UPGRADE ──
     function showHelp() {
         alert('💡 Zeph AI Help\n\n• Enter untuk kirim\n• Shift+Enter untuk baris baru\n• ⭐ untuk favorit\n• Export/Import chat di header');
     }
 
-    // ── UPGRADE ──
     function showUpgrade() {
         alert('🚀 Upgrade ke Zeph Pro\n\n✅ Respons lebih cepat\n✅ Model Vision\n✅ Prioritas antrian\n✅ Chat tanpa batas');
     }
@@ -611,7 +600,6 @@
         else { welcomeScreen.style.display = 'flex'; msgContainer.innerHTML = ''; }
 
         // ── EVENTS ──
-
         sendBtn.addEventListener('click', () => {
             const text = chatInput.value;
             if (text.trim() && !state.isGenerating) sendMessage(text);
