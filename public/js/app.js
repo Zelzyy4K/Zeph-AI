@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL - LIGHT MODE TEXT BLACK)
+// Zeph AI - Frontend Logic (FINAL - DARK/LIGHT MODE FIXED)
 (function() {
     'use strict';
     const state = {
@@ -53,7 +53,7 @@
     function saveState(){ try{ localStorage.setItem('zeph_state',JSON.stringify({ messages:state.messages, history:state.history, favorites:state.favorites, currentChatId:state.currentChatId, model:state.model, settings:state.settings })); }catch{} }
     function loadState(){ try{ const raw=localStorage.getItem('zeph_state'); if(!raw) return false; const data=JSON.parse(raw); state.messages=data.messages||[]; state.history=data.history||[]; state.favorites=data.favorites||[]; state.currentChatId=data.currentChatId||null; state.model=data.model||'mixtral-8x7b-32768'; state.settings={...state.settings,...(data.settings||{})}; return true; }catch{ return false; } }
     
-    // ── APPLY SETTINGS (TERMASUK THEME) ──
+    // ── APPLY SETTINGS ──
     function applySettings(){ 
         if(state.settings.theme === 'light'){ 
             document.body.classList.add('light-mode'); 
@@ -70,27 +70,55 @@
                 sidebar.style.borderColor = 'rgba(0,0,0,0.05)';
             }
             
-            // Sidebar text
-            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs, .badge-pro').forEach(el => {
-                el.style.color = '#111';
-            });
-            document.querySelectorAll('.history-item .text-white\\/30').forEach(el => {
-                el.style.color = '#888';
+            // Header
+            const header = document.querySelector('header');
+            if(header) {
+                header.style.background = 'rgba(245,245,245,0.9)';
+                header.style.borderColor = 'rgba(0,0,0,0.05)';
+            }
+            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60, header .logo-text, header .model-select').forEach(el => {
+                if(el) el.style.color = '#111';
             });
             
-            // Welcome screen
-            document.querySelectorAll('#welcome-screen h1, #welcome-screen p, #welcome-screen .text-white, #welcome-screen .text-white\\/50').forEach(el => {
-                el.style.color = '#111';
+            // Model select
+            const modelSel = document.querySelector('.model-select');
+            if(modelSel) {
+                modelSel.style.color = '#111';
+                modelSel.style.background = 'rgba(0,0,0,0.04)';
+                modelSel.style.borderColor = 'rgba(0,0,0,0.06)';
+            }
+            
+            // Sidebar text
+            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .badge-pro, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs').forEach(el => {
+                if(el) el.style.color = '#111';
             });
-            document.querySelectorAll('#welcome-screen .text-white\\/50').forEach(el => {
-                el.style.color = '#555';
+            document.querySelectorAll('.history-item .text-white\\/30').forEach(el => {
+                if(el) el.style.color = '#888';
+            });
+            document.querySelectorAll('.badge-pro').forEach(el => {
+                if(el) {
+                    el.style.color = '#555';
+                    el.style.background = 'rgba(0,0,0,0.05)';
+                    el.style.borderColor = 'rgba(0,0,0,0.06)';
+                }
+            });
+            
+            // Welcome screen - DARK MODE FIX: pastikan teks putih di dark, hitam di light
+            document.querySelectorAll('#welcome-screen h1, #welcome-screen .text-3xl, #welcome-screen .text-white, #welcome-screen .text-white\\/50, #welcome-screen p, #welcome-screen .text-lg').forEach(el => {
+                if(el) {
+                    if(el.classList.contains('text-white') || el.classList.contains('text-white/50') || el.classList.contains('text-lg') || el.tagName === 'H1' || el.tagName === 'P') {
+                        el.style.color = '#111';
+                    }
+                }
             });
             
             // Suggestion cards
             document.querySelectorAll('.suggestion-card').forEach(el => {
-                el.style.color = '#333';
-                el.style.background = 'rgba(255,255,255,0.6)';
-                el.style.borderColor = 'rgba(0,0,0,0.06)';
+                if(el) {
+                    el.style.color = '#333';
+                    el.style.background = 'rgba(255,255,255,0.6)';
+                    el.style.borderColor = 'rgba(0,0,0,0.06)';
+                }
             });
             
             // Input
@@ -104,15 +132,10 @@
                 textarea.style.color = '#111';
                 textarea.style.background = 'transparent';
             }
-            const inputPlaceholder = document.querySelector('#chat-input-inner textarea::placeholder');
-            if(inputPlaceholder) inputPlaceholder.style.color = '#888';
             
             // Input buttons
             document.querySelectorAll('#chat-input-inner button').forEach(el => {
-                el.style.color = '#666';
-            });
-            document.querySelectorAll('#chat-input-inner button:hover').forEach(el => {
-                el.style.color = '#111';
+                if(el) el.style.color = '#666';
             });
             
             // Send button
@@ -122,55 +145,45 @@
                 sendBtnEl.style.background = 'rgba(0,0,0,0.06)';
             }
             
-            // Header
-            const header = document.querySelector('header');
-            if(header) {
-                header.style.background = 'rgba(245,245,245,0.9)';
-                header.style.borderColor = 'rgba(0,0,0,0.05)';
-            }
-            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60').forEach(el => {
-                el.style.color = '#333';
-            });
-            
-            // Model select
-            const modelSel = document.querySelector('.model-select');
-            if(modelSel) {
-                modelSel.style.color = '#111';
-                modelSel.style.background = 'rgba(0,0,0,0.04)';
-                modelSel.style.borderColor = 'rgba(0,0,0,0.06)';
-            }
-            
             // Bubble user
             document.querySelectorAll('.bubble-user').forEach(el => {
-                el.style.background = 'rgba(0,0,0,0.05)';
-                el.style.borderColor = 'rgba(0,0,0,0.08)';
-                el.style.color = '#111';
+                if(el) {
+                    el.style.background = 'rgba(0,0,0,0.05)';
+                    el.style.borderColor = 'rgba(0,0,0,0.08)';
+                    el.style.color = '#111';
+                }
             });
             
             // Bubble AI
             document.querySelectorAll('.bubble-ai').forEach(el => {
-                el.style.background = 'rgba(255,255,255,0.8)';
-                el.style.borderColor = 'rgba(0,0,0,0.06)';
-                el.style.color = '#111';
+                if(el) {
+                    el.style.background = 'rgba(255,255,255,0.8)';
+                    el.style.borderColor = 'rgba(0,0,0,0.06)';
+                    el.style.color = '#111';
+                }
             });
             document.querySelectorAll('.bubble-ai .markdown-body').forEach(el => {
-                el.style.color = '#111';
+                if(el) el.style.color = '#111';
             });
             document.querySelectorAll('.bubble-ai .markdown-body code, .bubble-ai .markdown-body pre').forEach(el => {
-                el.style.color = '#111';
-                el.style.background = '#f0f0f0';
+                if(el) {
+                    el.style.color = '#111';
+                    el.style.background = '#f0f0f0';
+                }
             });
             
             // Bubble timestamps
-            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20').forEach(el => {
-                el.style.color = '#999';
+            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20, .text-white\\/20').forEach(el => {
+                if(el) el.style.color = '#999';
             });
             
             // Avatar
             document.querySelectorAll('.avatar-ring').forEach(el => {
-                el.style.background = 'rgba(0,0,0,0.05)';
-                el.style.borderColor = 'rgba(0,0,0,0.06)';
-                el.style.color = '#111';
+                if(el) {
+                    el.style.background = 'rgba(0,0,0,0.05)';
+                    el.style.borderColor = 'rgba(0,0,0,0.06)';
+                    el.style.color = '#111';
+                }
             });
             
             // Char counter
@@ -179,39 +192,7 @@
             
             // History
             document.querySelectorAll('.history-item').forEach(el => {
-                el.style.color = '#444';
-            });
-            document.querySelectorAll('.history-item:hover').forEach(el => {
-                el.style.background = 'rgba(0,0,0,0.04)';
-                el.style.color = '#111';
-            });
-            
-            // Settings panel
-            const settingsBox = document.querySelector('.settings-panel');
-            if(settingsBox) {
-                settingsBox.style.background = '#f5f5f5';
-                settingsBox.style.borderColor = 'rgba(0,0,0,0.06)';
-            }
-            document.querySelectorAll('.settings-panel h2, .settings-panel .setting-item label, .settings-panel .setting-item .setting-value, .settings-panel .setting-checkbox, .settings-panel .settings-section h3, .settings-panel .settings-link').forEach(el => {
-                el.style.color = '#111';
-            });
-            document.querySelectorAll('.settings-panel .setting-item select, .settings-panel .setting-item input[type="range"]').forEach(el => {
-                el.style.background = '#fff';
-                el.style.color = '#111';
-                el.style.borderColor = 'rgba(0,0,0,0.1)';
-            });
-            document.querySelectorAll('.settings-panel .settings-close').forEach(el => {
-                el.style.color = '#888';
-            });
-            document.querySelectorAll('.settings-panel .settings-close:hover').forEach(el => {
-                el.style.color = '#111';
-            });
-            document.querySelectorAll('.settings-panel .btn-save').forEach(el => {
-                el.style.color = '#111';
-                el.style.background = 'rgba(0,0,0,0.05)';
-            });
-            document.querySelectorAll('.settings-panel .btn-cancel').forEach(el => {
-                el.style.color = '#888';
+                if(el) el.style.color = '#444';
             });
             
             // Toggle sidebar button
@@ -219,6 +200,7 @@
             if(toggleBtn) toggleBtn.style.color = '#444';
             
         } else { 
+            // ── DARK MODE ──
             document.body.classList.remove('light-mode'); 
             document.body.style.background = '#0A0A0A';
             document.body.style.color = '#FFFFFF';
@@ -231,23 +213,68 @@
                 sidebar.style.borderColor = 'rgba(255,255,255,0.05)';
             }
             
-            // Reset sidebar text
-            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs, .badge-pro').forEach(el => {
-                el.style.color = '';
+            // Header - DARK MODE: pastikan putih
+            const header = document.querySelector('header');
+            if(header) {
+                header.style.background = 'rgba(10,10,10,0.8)';
+                header.style.borderColor = 'rgba(255,255,255,0.05)';
+            }
+            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60, header .logo-text, header .model-select').forEach(el => {
+                if(el) {
+                    el.style.color = '#FFFFFF';
+                    if(el.classList.contains('logo-text')) {
+                        el.style.color = '';
+                    }
+                }
             });
             
-            // Reset welcome
-            document.querySelectorAll('#welcome-screen h1, #welcome-screen p, #welcome-screen .text-white, #welcome-screen .text-white\\/50').forEach(el => {
-                el.style.color = '';
+            // Model select
+            const modelSel = document.querySelector('.model-select');
+            if(modelSel) {
+                modelSel.style.color = '#eee';
+                modelSel.style.background = 'rgba(255,255,255,0.04)';
+                modelSel.style.borderColor = 'rgba(255,255,255,0.06)';
+            }
+            
+            // Reset sidebar text - DARK MODE: putih
+            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .badge-pro, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs').forEach(el => {
+                if(el) {
+                    el.style.color = '';
+                    if(el.classList.contains('badge-pro')) {
+                        el.style.color = '#aaa';
+                        el.style.background = 'rgba(255,255,255,0.06)';
+                        el.style.borderColor = 'rgba(255,255,255,0.06)';
+                    }
+                }
+            });
+            document.querySelectorAll('.badge-pro').forEach(el => {
+                if(el) {
+                    el.style.color = '#aaa';
+                    el.style.background = 'rgba(255,255,255,0.06)';
+                    el.style.borderColor = 'rgba(255,255,255,0.06)';
+                }
             });
             
-            // Reset suggestion cards
+            // Welcome screen - DARK MODE: putih
+            document.querySelectorAll('#welcome-screen h1, #welcome-screen .text-3xl, #welcome-screen .text-white, #welcome-screen .text-white\\/50, #welcome-screen p, #welcome-screen .text-lg').forEach(el => {
+                if(el) {
+                    el.style.color = '';
+                    if(el.classList.contains('text-white/50')) {
+                        el.style.color = 'rgba(255,255,255,0.5)';
+                    }
+                }
+            });
+            
+            // Suggestion cards - DARK MODE
             document.querySelectorAll('.suggestion-card').forEach(el => {
-                el.style.color = '';
-                el.style.background = '';
-                el.style.borderColor = '';
+                if(el) {
+                    el.style.color = '';
+                    el.style.background = '';
+                    el.style.borderColor = '';
+                }
             });
             
+            // Input
             const inputInner = document.getElementById('chat-input-inner');
             if(inputInner) {
                 inputInner.style.background = 'rgba(24,24,24,0.80)';
@@ -260,7 +287,7 @@
             }
             
             document.querySelectorAll('#chat-input-inner button').forEach(el => {
-                el.style.color = '#888';
+                if(el) el.style.color = '#888';
             });
             
             const sendBtnEl = document.getElementById('send-btn');
@@ -269,80 +296,48 @@
                 sendBtnEl.style.background = 'rgba(255,255,255,0.08)';
             }
             
-            const header = document.querySelector('header');
-            if(header) {
-                header.style.background = '#0A0A0A/80';
-                header.style.borderColor = 'rgba(255,255,255,0.05)';
-            }
-            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60').forEach(el => {
-                el.style.color = '';
-            });
-            
-            const modelSel = document.querySelector('.model-select');
-            if(modelSel) {
-                modelSel.style.color = '#eee';
-                modelSel.style.background = 'rgba(255,255,255,0.04)';
-                modelSel.style.borderColor = 'rgba(255,255,255,0.06)';
-            }
-            
             document.querySelectorAll('.bubble-user').forEach(el => {
-                el.style.background = 'rgba(255,255,255,0.08)';
-                el.style.borderColor = 'rgba(255,255,255,0.06)';
-                el.style.color = '#FFFFFF';
+                if(el) {
+                    el.style.background = 'rgba(255,255,255,0.08)';
+                    el.style.borderColor = 'rgba(255,255,255,0.06)';
+                    el.style.color = '#FFFFFF';
+                }
             });
             
             document.querySelectorAll('.bubble-ai').forEach(el => {
-                el.style.background = 'rgba(24,24,24,0.70)';
-                el.style.borderColor = 'rgba(255,255,255,0.06)';
-                el.style.color = '#FFFFFF';
+                if(el) {
+                    el.style.background = 'rgba(24,24,24,0.70)';
+                    el.style.borderColor = 'rgba(255,255,255,0.06)';
+                    el.style.color = '#FFFFFF';
+                }
             });
             document.querySelectorAll('.bubble-ai .markdown-body').forEach(el => {
-                el.style.color = '#e8e8e8';
+                if(el) el.style.color = '#e8e8e8';
             });
             document.querySelectorAll('.bubble-ai .markdown-body code, .bubble-ai .markdown-body pre').forEach(el => {
-                el.style.color = '';
-                el.style.background = '';
+                if(el) {
+                    el.style.color = '';
+                    el.style.background = '';
+                }
             });
             
-            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20').forEach(el => {
-                el.style.color = '';
+            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20, .text-white\\/20').forEach(el => {
+                if(el) el.style.color = '';
             });
             
             document.querySelectorAll('.avatar-ring').forEach(el => {
-                el.style.background = '';
-                el.style.borderColor = '';
-                el.style.color = '';
+                if(el) {
+                    el.style.background = '';
+                    el.style.borderColor = '';
+                    el.style.color = '';
+                }
             });
             
             const counter = document.getElementById('char-counter');
             if(counter) counter.style.color = '';
             
             document.querySelectorAll('.history-item').forEach(el => {
-                el.style.color = '';
-            });
-            
-            const settingsBox = document.querySelector('.settings-panel');
-            if(settingsBox) {
-                settingsBox.style.background = '#141414';
-                settingsBox.style.borderColor = 'rgba(255,255,255,0.07)';
-            }
-            document.querySelectorAll('.settings-panel h2, .settings-panel .setting-item label, .settings-panel .setting-item .setting-value, .settings-panel .setting-checkbox, .settings-panel .settings-section h3, .settings-panel .settings-link').forEach(el => {
-                el.style.color = '';
-            });
-            document.querySelectorAll('.settings-panel .setting-item select, .settings-panel .setting-item input[type="range"]').forEach(el => {
-                el.style.background = '';
-                el.style.color = '';
-                el.style.borderColor = '';
-            });
-            document.querySelectorAll('.settings-panel .settings-close').forEach(el => {
-                el.style.color = '';
-            });
-            document.querySelectorAll('.settings-panel .btn-save').forEach(el => {
-                el.style.color = '';
-                el.style.background = '';
-            });
-            document.querySelectorAll('.settings-panel .btn-cancel').forEach(el => {
-                el.style.color = '';
+                if(el) el.style.color = '';
             });
             
             const toggleBtn = document.getElementById('toggle-sidebar-btn');
@@ -363,9 +358,7 @@
         const dur = speed==='fast'?'0.15s':speed==='slow'?'0.6s':'0.3s'; 
         document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el=>el.style.transitionDuration=dur); 
         
-        // UPDATE ICON DARK TOGGLE
         updateDarkToggleIcon();
-        
         saveState(); 
     }
     
