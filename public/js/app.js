@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL - DARK/LIGHT MODE FIXED)
+// Zeph AI - Frontend Logic (FINAL - DARK/LIGHT MODE + SETTINGS MODAL + STOP FIX)
 (function() {
     'use strict';
     const state = {
@@ -41,6 +41,7 @@
     const charCounter = $('char-counter');
     const toggleSidebarBtn = $('toggle-sidebar-btn');
     let sidebarVisible = true;
+    let activeController = null; // AbortController untuk membatalkan request AI yang sedang berjalan
 
     function uid(){ return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
     function escapeHtml(text){ const d=document.createElement('div'); d.textContent=text; return d.innerHTML; }
@@ -52,24 +53,24 @@
     function highlightCodeBlocks(container){ container.querySelectorAll('pre code').forEach(block=>{ try{ hljs.highlightElement(block); }catch{} }); }
     function saveState(){ try{ localStorage.setItem('zeph_state',JSON.stringify({ messages:state.messages, history:state.history, favorites:state.favorites, currentChatId:state.currentChatId, model:state.model, settings:state.settings })); }catch{} }
     function loadState(){ try{ const raw=localStorage.getItem('zeph_state'); if(!raw) return false; const data=JSON.parse(raw); state.messages=data.messages||[]; state.history=data.history||[]; state.favorites=data.favorites||[]; state.currentChatId=data.currentChatId||null; state.model=data.model||'mixtral-8x7b-32768'; state.settings={...state.settings,...(data.settings||{})}; return true; }catch{ return false; } }
-    
+
     // ── APPLY SETTINGS ──
-    function applySettings(){ 
-        if(state.settings.theme === 'light'){ 
-            document.body.classList.add('light-mode'); 
+    function applySettings(){
+        if(state.settings.theme === 'light'){
+            document.body.classList.add('light-mode');
             document.body.style.background = '#f5f5f5';
             document.body.style.color = '#111';
-            
+
             // Chat area
             const chatArea = document.getElementById('chat-area');
             if(chatArea) chatArea.style.background = '#f5f5f5';
-            
+
             // Sidebar
             if(sidebar) {
                 sidebar.style.background = 'rgba(245,245,245,0.95)';
                 sidebar.style.borderColor = 'rgba(0,0,0,0.05)';
             }
-            
+
             // Header
             const header = document.querySelector('header');
             if(header) {
@@ -79,7 +80,7 @@
             document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60, header .logo-text, header .model-select').forEach(el => {
                 if(el) el.style.color = '#111';
             });
-            
+
             // Model select
             const modelSel = document.querySelector('.model-select');
             if(modelSel) {
@@ -87,7 +88,7 @@
                 modelSel.style.background = 'rgba(0,0,0,0.04)';
                 modelSel.style.borderColor = 'rgba(0,0,0,0.06)';
             }
-            
+
             // Sidebar text
             document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .badge-pro, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs').forEach(el => {
                 if(el) el.style.color = '#111';
@@ -102,8 +103,8 @@
                     el.style.borderColor = 'rgba(0,0,0,0.06)';
                 }
             });
-            
-            // Welcome screen - DARK MODE FIX: pastikan teks putih di dark, hitam di light
+
+            // Welcome screen
             document.querySelectorAll('#welcome-screen h1, #welcome-screen .text-3xl, #welcome-screen .text-white, #welcome-screen .text-white\\/50, #welcome-screen p, #welcome-screen .text-lg').forEach(el => {
                 if(el) {
                     if(el.classList.contains('text-white') || el.classList.contains('text-white/50') || el.classList.contains('text-lg') || el.tagName === 'H1' || el.tagName === 'P') {
@@ -111,7 +112,7 @@
                     }
                 }
             });
-            
+
             // Suggestion cards
             document.querySelectorAll('.suggestion-card').forEach(el => {
                 if(el) {
@@ -120,7 +121,7 @@
                     el.style.borderColor = 'rgba(0,0,0,0.06)';
                 }
             });
-            
+
             // Input
             const inputInner = document.getElementById('chat-input-inner');
             if(inputInner) {
@@ -132,19 +133,19 @@
                 textarea.style.color = '#111';
                 textarea.style.background = 'transparent';
             }
-            
+
             // Input buttons
             document.querySelectorAll('#chat-input-inner button').forEach(el => {
                 if(el) el.style.color = '#666';
             });
-            
+
             // Send button
             const sendBtnEl = document.getElementById('send-btn');
             if(sendBtnEl) {
                 sendBtnEl.style.color = '#111';
                 sendBtnEl.style.background = 'rgba(0,0,0,0.06)';
             }
-            
+
             // Bubble user
             document.querySelectorAll('.bubble-user').forEach(el => {
                 if(el) {
@@ -153,7 +154,7 @@
                     el.style.color = '#111';
                 }
             });
-            
+
             // Bubble AI
             document.querySelectorAll('.bubble-ai').forEach(el => {
                 if(el) {
@@ -171,12 +172,12 @@
                     el.style.background = '#f0f0f0';
                 }
             });
-            
+
             // Bubble timestamps
             document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20, .text-white\\/20').forEach(el => {
                 if(el) el.style.color = '#999';
             });
-            
+
             // Avatar
             document.querySelectorAll('.avatar-ring').forEach(el => {
                 if(el) {
@@ -185,35 +186,34 @@
                     el.style.color = '#111';
                 }
             });
-            
+
             // Char counter
             const counter = document.getElementById('char-counter');
             if(counter) counter.style.color = '#888';
-            
+
             // History
             document.querySelectorAll('.history-item').forEach(el => {
                 if(el) el.style.color = '#444';
             });
-            
+
             // Toggle sidebar button
             const toggleBtn = document.getElementById('toggle-sidebar-btn');
             if(toggleBtn) toggleBtn.style.color = '#444';
-            
-        } else { 
+
+        } else {
             // ── DARK MODE ──
-            document.body.classList.remove('light-mode'); 
+            document.body.classList.remove('light-mode');
             document.body.style.background = '#0A0A0A';
             document.body.style.color = '#FFFFFF';
-            
+
             const chatArea = document.getElementById('chat-area');
             if(chatArea) chatArea.style.background = '#0A0A0A';
-            
+
             if(sidebar) {
                 sidebar.style.background = 'rgba(10,10,10,0.95)';
                 sidebar.style.borderColor = 'rgba(255,255,255,0.05)';
             }
-            
-            // Header - DARK MODE: pastikan putih
+
             const header = document.querySelector('header');
             if(header) {
                 header.style.background = 'rgba(10,10,10,0.8)';
@@ -227,16 +227,14 @@
                     }
                 }
             });
-            
-            // Model select
+
             const modelSel = document.querySelector('.model-select');
             if(modelSel) {
                 modelSel.style.color = '#eee';
                 modelSel.style.background = 'rgba(255,255,255,0.04)';
                 modelSel.style.borderColor = 'rgba(255,255,255,0.06)';
             }
-            
-            // Reset sidebar text - DARK MODE: putih
+
             document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .badge-pro, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs').forEach(el => {
                 if(el) {
                     el.style.color = '';
@@ -254,8 +252,7 @@
                     el.style.borderColor = 'rgba(255,255,255,0.06)';
                 }
             });
-            
-            // Welcome screen - DARK MODE: putih
+
             document.querySelectorAll('#welcome-screen h1, #welcome-screen .text-3xl, #welcome-screen .text-white, #welcome-screen .text-white\\/50, #welcome-screen p, #welcome-screen .text-lg').forEach(el => {
                 if(el) {
                     el.style.color = '';
@@ -264,8 +261,7 @@
                     }
                 }
             });
-            
-            // Suggestion cards - DARK MODE
+
             document.querySelectorAll('.suggestion-card').forEach(el => {
                 if(el) {
                     el.style.color = '';
@@ -273,8 +269,7 @@
                     el.style.borderColor = '';
                 }
             });
-            
-            // Input
+
             const inputInner = document.getElementById('chat-input-inner');
             if(inputInner) {
                 inputInner.style.background = 'rgba(24,24,24,0.80)';
@@ -285,17 +280,17 @@
                 textarea.style.color = '#f0f0f0';
                 textarea.style.background = 'transparent';
             }
-            
+
             document.querySelectorAll('#chat-input-inner button').forEach(el => {
                 if(el) el.style.color = '#888';
             });
-            
+
             const sendBtnEl = document.getElementById('send-btn');
             if(sendBtnEl) {
                 sendBtnEl.style.color = '#fff';
                 sendBtnEl.style.background = 'rgba(255,255,255,0.08)';
             }
-            
+
             document.querySelectorAll('.bubble-user').forEach(el => {
                 if(el) {
                     el.style.background = 'rgba(255,255,255,0.08)';
@@ -303,7 +298,7 @@
                     el.style.color = '#FFFFFF';
                 }
             });
-            
+
             document.querySelectorAll('.bubble-ai').forEach(el => {
                 if(el) {
                     el.style.background = 'rgba(24,24,24,0.70)';
@@ -320,11 +315,11 @@
                     el.style.background = '';
                 }
             });
-            
+
             document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20, .text-white\\/20').forEach(el => {
                 if(el) el.style.color = '';
             });
-            
+
             document.querySelectorAll('.avatar-ring').forEach(el => {
                 if(el) {
                     el.style.background = '';
@@ -332,36 +327,36 @@
                     el.style.color = '';
                 }
             });
-            
+
             const counter = document.getElementById('char-counter');
             if(counter) counter.style.color = '';
-            
+
             document.querySelectorAll('.history-item').forEach(el => {
                 if(el) el.style.color = '';
             });
-            
+
             const toggleBtn = document.getElementById('toggle-sidebar-btn');
             if(toggleBtn) toggleBtn.style.color = '';
         }
-        
+
         // FONT SIZE
         document.documentElement.style.fontSize = state.settings.fontSize + 'px';
-        
+
         // SIDEBAR WIDTH
-        if(sidebarVisible){ 
-            sidebar.style.width = state.settings.sidebarWidth + 'px'; 
-            sidebar.style.minWidth = state.settings.sidebarWidth + 'px'; 
+        if(sidebarVisible){
+            sidebar.style.width = state.settings.sidebarWidth + 'px';
+            sidebar.style.minWidth = state.settings.sidebarWidth + 'px';
         }
-        
+
         // ANIMATION SPEED
-        const speed = state.settings.animSpeed; 
-        const dur = speed==='fast'?'0.15s':speed==='slow'?'0.6s':'0.3s'; 
-        document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el=>el.style.transitionDuration=dur); 
-        
+        const speed = state.settings.animSpeed;
+        const dur = speed==='fast'?'0.15s':speed==='slow'?'0.6s':'0.3s';
+        document.querySelectorAll('.fade-in, .sidebar, .settings-overlay').forEach(el=>el.style.transitionDuration=dur);
+
         updateDarkToggleIcon();
-        saveState(); 
+        saveState();
     }
-    
+
     function updateDarkToggleIcon() {
         const icon = darkToggle?.querySelector('svg');
         if(icon) {
@@ -384,7 +379,83 @@
     function saveChatMessages(){ if(state.currentChatId){ localStorage.setItem(`zeph_chat_${state.currentChatId}`,JSON.stringify(state.messages)); } }
     function renderMessages(){ if(!msgContainer) return; const hasMessages=state.messages.length>0; if(!hasMessages){ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; return; } welcomeScreen.style.display='none'; let html=''; state.messages.forEach((msg,idx)=>{const isUser=msg.role==='user'; const avatar=isUser?'U':'Z'; const avatarClass=isUser?'user':'ai'; const bubbleClass=isUser?'bubble-user':'bubble-ai'; const radius=state.settings.bubbleRadius||18; const content=isUser?escapeHtml(msg.content):renderMarkdown(msg.content); const tokenCount=countTokens(msg.content); const wordCount=countWords(msg.content); html+=`<div class="message-group ${isUser?'message-user':'message-ai'} fade-in" data-id="${msg.id||idx}"><div class="flex ${isUser?'flex-row-reverse':'flex-row'} gap-2.5 w-full"><div class="avatar-ring ${avatarClass}">${avatar}</div><div class="${bubbleClass}" style="border-radius:${radius}px;">${content}<div class="text-[10px] text-white/20 mt-1 flex items-center gap-3 flex-wrap"><span>${formatTime(msg.timestamp||Date.now())}</span><span>${wordCount} kata · ${tokenCount} token</span></div></div></div></div>`;}); msgContainer.innerHTML=html; highlightCodeBlocks(msgContainer); msgContainer.querySelectorAll('pre code').forEach((block)=>{const pre=block.closest('pre'); if(!pre) return; const btn=document.createElement('button'); btn.className='absolute top-2 right-2 text-xs text-white/30 hover:text-white/70 bg-black/40 px-2 py-1 rounded border border-white/10 transition'; btn.textContent='Copy'; btn.style.position='absolute'; btn.style.top='8px'; btn.style.right='8px'; pre.style.position='relative'; pre.appendChild(btn); btn.addEventListener('click',()=>{const code=block.textContent||''; navigator.clipboard.writeText(code).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>{});});}); if(state.settings.autoScroll){ setTimeout(()=>{ chatMessages.scrollTop=chatMessages.scrollHeight; },50); } saveChatMessages(); saveState(); }
     async function sendMessage(text,isEdit=false){ if(!text||!text.trim()) return; const content=text.trim(); if(!state.currentChatId){ state.currentChatId=uid(); const title=truncate(content,40); addHistory(state.currentChatId,title,content); } const userMsg={id:uid(),role:'user',content:content,timestamp:Date.now()}; state.messages.push(userMsg); const h=state.history.find(h=>h.id===state.currentChatId); if(h){ h.title=truncate(content,40); h.lastMessage=content; h.updated=Date.now(); } renderMessages(); chatInput.value=''; chatInput.style.height='auto'; charCounter.textContent='0'; saveState(); if(!isEdit) await callAI(content); }
-    async function callAI(userContent){ if(state.isGenerating) return; state.isGenerating=true; sendBtn.disabled=true; stopBtn.classList.remove('hidden'); const aiMsg={id:uid(),role:'ai',content:'',timestamp:Date.now()}; state.messages.push(aiMsg); renderMessages(); try{ const chatHistory=state.messages.filter(m=>m.content).map(m=>({role:m.role,content:m.content})); const response=await fetch(`${API_BASE}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory,model:state.model,stream:state.settings.streaming!==false})}); if(!response.ok){ const errorData=await response.json().catch(()=>({})); throw new Error(errorData.error||`HTTP ${response.status}`); } if(state.settings.streaming!==false){ const reader=response.body.getReader(); const decoder=new TextDecoder(); let fullText=''; let done=false; while(!done){ const {value,done:doneReading}=await reader.read(); done=doneReading; if(done) break; const chunk=decoder.decode(value,{stream:true}); const lines=chunk.split('\n').filter(line=>line.startsWith('data: ')); for(const line of lines){ const data=line.slice(6).trim(); if(data==='[DONE]') continue; try{ const json=JSON.parse(data); if(json.content){ fullText+=json.content; aiMsg.content=fullText; renderMessages(); if(state.settings.autoScroll) chatMessages.scrollTop=chatMessages.scrollHeight; } }catch{} } } if(fullText==='') aiMsg.content='[Tidak ada respons dari AI]'; }else{ const data=await response.json(); aiMsg.content=data.content||'[Tidak ada respons]'; } renderMessages(); }catch(error){ console.error('AI Error:',error); aiMsg.content=`❌ Terjadi kesalahan: ${error.message||'Silakan coba lagi.'}`; renderMessages(); }finally{ state.isGenerating=false; sendBtn.disabled=false; stopBtn.classList.add('hidden'); const h=state.history.find(h=>h.id===state.currentChatId); if(h){ h.lastMessage=aiMsg.content||userContent; h.updated=Date.now(); } saveChatMessages(); saveState(); renderAll(); renderMessages(); if(state.settings.autoScroll) chatMessages.scrollTop=chatMessages.scrollHeight; } }
+
+    // ── AI CALL (dengan dukungan pembatalan lewat AbortController) ──
+    async function callAI(userContent){
+        if(state.isGenerating) return;
+        state.isGenerating=true;
+        sendBtn.disabled=true;
+        stopBtn.classList.remove('hidden');
+        activeController = new AbortController();
+        const aiMsg={id:uid(),role:'ai',content:'',timestamp:Date.now()};
+        state.messages.push(aiMsg);
+        renderMessages();
+        try{
+            const chatHistory=state.messages.filter(m=>m.content).map(m=>({role:m.role,content:m.content}));
+            const response=await fetch(`${API_BASE}/api/chat`,{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({messages:chatHistory,model:state.model,stream:state.settings.streaming!==false}),
+                signal: activeController.signal
+            });
+            if(!response.ok){
+                const errorData=await response.json().catch(()=>({}));
+                throw new Error(errorData.error||`HTTP ${response.status}`);
+            }
+            if(state.settings.streaming!==false){
+                const reader=response.body.getReader();
+                const decoder=new TextDecoder();
+                let fullText='';
+                let done=false;
+                while(!done){
+                    const {value,done:doneReading}=await reader.read();
+                    done=doneReading;
+                    if(done) break;
+                    const chunk=decoder.decode(value,{stream:true});
+                    const lines=chunk.split('\n').filter(line=>line.startsWith('data: '));
+                    for(const line of lines){
+                        const data=line.slice(6).trim();
+                        if(data==='[DONE]') continue;
+                        try{
+                            const json=JSON.parse(data);
+                            if(json.content){
+                                fullText+=json.content;
+                                aiMsg.content=fullText;
+                                renderMessages();
+                                if(state.settings.autoScroll) chatMessages.scrollTop=chatMessages.scrollHeight;
+                            }
+                        }catch{}
+                    }
+                }
+                if(fullText==='') aiMsg.content='[Tidak ada respons dari AI]';
+            }else{
+                const data=await response.json();
+                aiMsg.content=data.content||'[Tidak ada respons]';
+            }
+            renderMessages();
+        }catch(error){
+            if(error.name === 'AbortError'){
+                if(!aiMsg.content) aiMsg.content='[Dihentikan oleh pengguna]';
+            }else{
+                console.error('AI Error:',error);
+                aiMsg.content=`❌ Terjadi kesalahan: ${error.message||'Silakan coba lagi.'}`;
+            }
+            renderMessages();
+        }finally{
+            activeController = null;
+            state.isGenerating=false;
+            sendBtn.disabled=false;
+            stopBtn.classList.add('hidden');
+            const h=state.history.find(h=>h.id===state.currentChatId);
+            if(h){ h.lastMessage=aiMsg.content||userContent; h.updated=Date.now(); }
+            saveChatMessages();
+            saveState();
+            renderAll();
+            renderMessages();
+            if(state.settings.autoScroll) chatMessages.scrollTop=chatMessages.scrollHeight;
+        }
+    }
+
     function newChat(){ state.messages=[]; state.currentChatId=null; renderMessages(); chatInput.value=''; charCounter.textContent='0'; chatInput.style.height='auto'; saveState(); chatInput.focus(); }
     function toggleSidebar(){ if(window.innerWidth<=768){ sidebar.classList.toggle('mobile-open'); overlay.classList.toggle('active'); }else{ sidebarVisible=!sidebarVisible; if(sidebarVisible){ sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`; }else{ sidebar.classList.add('desktop-hidden'); sidebar.style.width='0'; sidebar.style.minWidth='0'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='none'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Show Sidebar`; } } }
     function closeSidebarMobile(){ if(window.innerWidth<=768){ sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); } }
@@ -393,24 +464,24 @@
     function getFirstText(msg){ const plain=msg.replace(/<[^>]*>/g,''); return truncate(plain,50); }
     function openSettings(){ const overlay=document.getElementById('settings-overlay'); overlay.classList.add('active'); document.getElementById('set-theme').value=state.settings.theme||'dark'; document.getElementById('set-lang').value=state.settings.lang||'id'; document.getElementById('set-fontsize').value=state.settings.fontSize||15; document.getElementById('fontsize-label').textContent=(state.settings.fontSize||15)+'px'; document.getElementById('set-history').checked=state.settings.chatHistory!==false; document.getElementById('set-autoscroll').checked=state.settings.autoScroll!==false; document.getElementById('set-streaming').checked=state.settings.streaming!==false; document.getElementById('set-sidebarwidth').value=state.settings.sidebarWidth||280; document.getElementById('set-bubbleradius').value=state.settings.bubbleRadius||18; document.getElementById('set-animspeed').value=state.settings.animSpeed||'normal'; }
     function closeSettings(){ document.getElementById('settings-overlay').classList.remove('active'); }
-    function saveSettings(){ 
-        state.settings.theme = document.getElementById('set-theme').value; 
-        state.settings.lang = document.getElementById('set-lang').value; 
-        state.settings.fontSize = parseInt(document.getElementById('set-fontsize').value); 
-        state.settings.chatHistory = document.getElementById('set-history').checked; 
-        state.settings.autoScroll = document.getElementById('set-autoscroll').checked; 
-        state.settings.streaming = document.getElementById('set-streaming').checked; 
-        state.settings.sidebarWidth = parseInt(document.getElementById('set-sidebarwidth').value); 
-        state.settings.bubbleRadius = parseInt(document.getElementById('set-bubbleradius').value); 
-        state.settings.animSpeed = document.getElementById('set-animspeed').value; 
-        applySettings(); 
-        renderMessages(); 
-        closeSettings(); 
-        saveState(); 
+    function saveSettings(){
+        state.settings.theme = document.getElementById('set-theme').value;
+        state.settings.lang = document.getElementById('set-lang').value;
+        state.settings.fontSize = parseInt(document.getElementById('set-fontsize').value);
+        state.settings.chatHistory = document.getElementById('set-history').checked;
+        state.settings.autoScroll = document.getElementById('set-autoscroll').checked;
+        state.settings.streaming = document.getElementById('set-streaming').checked;
+        state.settings.sidebarWidth = parseInt(document.getElementById('set-sidebarwidth').value);
+        state.settings.bubbleRadius = parseInt(document.getElementById('set-bubbleradius').value);
+        state.settings.animSpeed = document.getElementById('set-animspeed').value;
+        applySettings();
+        renderMessages();
+        closeSettings();
+        saveState();
     }
     function showHelp(){ alert('💡 Zeph AI Help\n\n• Enter untuk kirim\n• Shift+Enter untuk baris baru\n• ⭐ untuk favorit\n• Export/Import chat di header'); }
     function showUpgrade(){ alert('🚀 Upgrade ke Zeph Pro\n\n✅ Respons lebih cepat\n✅ Model Vision\n✅ Prioritas antrian\n✅ Chat tanpa batas'); }
-    
+
     function toggleDarkLight() {
         state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
         applySettings();
@@ -419,47 +490,53 @@
         if(themeSelect) themeSelect.value = state.settings.theme;
     }
 
-    function init(){ 
-        const hasSaved=loadState(); 
-        applySettings(); 
-        modelSelect.value=state.model||'mixtral-8x7b-32768'; 
-        renderAll(); 
-        if(hasSaved&&state.messages.length>0) renderMessages(); 
-        else{ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; } 
-        
-        sendBtn.addEventListener('click',()=>{const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}); 
-        chatInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}}); 
-        chatInput.addEventListener('input',()=>{chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length;}); 
-        newChatBtn.addEventListener('click',newChat); 
-        if(menuToggle) menuToggle.addEventListener('click',toggleSidebar); 
-        if(toggleSidebarBtn) toggleSidebarBtn.addEventListener('click',toggleSidebar); 
-        if(overlay) overlay.addEventListener('click',closeSidebarMobile); 
-        modelSelect.addEventListener('change',()=>{state.model=modelSelect.value; saveState();}); 
-        
+    function init(){
+        const hasSaved=loadState();
+        applySettings();
+        modelSelect.value=state.model||'mixtral-8x7b-32768';
+        renderAll();
+        if(hasSaved&&state.messages.length>0) renderMessages();
+        else{ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; }
+
+        sendBtn.addEventListener('click',()=>{const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);});
+        chatInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}});
+        chatInput.addEventListener('input',()=>{chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length;});
+        newChatBtn.addEventListener('click',newChat);
+        if(menuToggle) menuToggle.addEventListener('click',toggleSidebar);
+        if(toggleSidebarBtn) toggleSidebarBtn.addEventListener('click',toggleSidebar);
+        if(overlay) overlay.addEventListener('click',closeSidebarMobile);
+        modelSelect.addEventListener('change',()=>{state.model=modelSelect.value; saveState();});
+
         if(darkToggle) darkToggle.addEventListener('click', toggleDarkLight);
-        
-        clearBtn.addEventListener('click',()=>{if(state.messages.length===0) return; if(confirm('Hapus semua pesan?')){state.messages=[]; renderMessages(); saveState(); saveChatMessages();}}); 
-        searchInput.addEventListener('input',renderAll); 
-        document.getElementById('profile-btn').addEventListener('click',openSettings); 
-        document.getElementById('settings-btn').addEventListener('click',openSettings); 
-        document.getElementById('settings-close').addEventListener('click',closeSettings); 
-        document.getElementById('settings-cancel').addEventListener('click',closeSettings); 
-        document.getElementById('settings-save').addEventListener('click',saveSettings); 
-        document.getElementById('settings-overlay').addEventListener('click',(e)=>{if(e.target===e.currentTarget) closeSettings();}); 
-        document.getElementById('help-btn').addEventListener('click',showHelp); 
-        document.getElementById('upgrade-btn').addEventListener('click',showUpgrade); 
-        document.querySelectorAll('.suggestion-card').forEach(card=>{card.addEventListener('click',()=>{const prompt=card.dataset.prompt||card.textContent.trim(); chatInput.value=prompt; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=prompt.length; chatInput.focus(); if(prompt.trim()&&!state.isGenerating) sendMessage(prompt);});}); 
-        document.getElementById('emoji-btn').addEventListener('click',()=>{const emojis=['😊','🔥','✨','🚀','💡','🎯','📌','✅','🎉','💪','🤖','🧠']; const pick=emojis[Math.floor(Math.random()*emojis.length)]; chatInput.value+=pick; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}); 
-        document.getElementById('upload-btn').addEventListener('click',()=>{const input=document.createElement('input'); input.type='file'; input.accept='image/*,.pdf,.txt,.md'; input.click(); input.onchange=(e)=>{const file=e.target.files?.[0]; if(file){const reader=new FileReader(); reader.onload=(ev)=>{const content=ev.target?.result; if(typeof content==='string'){chatInput.value+=`\n[Upload: ${file.name}]\n${content.slice(0,200)}...`;}else{chatInput.value+=`\n[Upload: ${file.name}]`;} chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; if(file.type.startsWith('text/')||file.name.endsWith('.md')||file.name.endsWith('.txt')){reader.readAsText(file);}else{chatInput.value+=`\n[Upload: ${file.name} (gambar)]`; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}}};}); 
-        document.getElementById('voice-btn').addEventListener('click',()=>{if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const recognizer=new SR(); recognizer.lang='id-ID'; recognizer.interimResults=false; recognizer.onresult=(e)=>{const transcript=e.results[0][0].transcript; chatInput.value+=transcript; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; recognizer.start();}else{alert('Voice input tidak didukung di browser ini.');}}); 
-        document.getElementById('export-txt').addEventListener('click',()=>exportChat('txt')); 
-        document.getElementById('export-md').addEventListener('click',()=>exportChat('md')); 
-        document.getElementById('import-btn').addEventListener('click',importChat); 
-        stopBtn.addEventListener('click',()=>{state.isGenerating=false; sendBtn.disabled=false; stopBtn.classList.add('hidden');}); 
-        document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault(); newChat();} if(e.key==='Escape') closeSidebarMobile();}); 
-        chatInput.focus(); 
-        window.addEventListener('resize',()=>{if(window.innerWidth>768){sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); if(!sidebarVisible){sidebarVisible=true; sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`;}}}); 
-        console.log('🚀 Zeph AI v2.0 ready!'); 
+
+        clearBtn.addEventListener('click',()=>{if(state.messages.length===0) return; if(confirm('Hapus semua pesan?')){state.messages=[]; renderMessages(); saveState(); saveChatMessages();}});
+        searchInput.addEventListener('input',renderAll);
+        document.getElementById('profile-btn').addEventListener('click',openSettings);
+        document.getElementById('settings-btn').addEventListener('click',openSettings);
+        document.getElementById('settings-close').addEventListener('click',closeSettings);
+        document.getElementById('settings-cancel').addEventListener('click',closeSettings);
+        document.getElementById('settings-save').addEventListener('click',saveSettings);
+        document.getElementById('settings-overlay').addEventListener('click',(e)=>{if(e.target===e.currentTarget) closeSettings();});
+        document.getElementById('set-fontsize').addEventListener('input',(e)=>{document.getElementById('fontsize-label').textContent=e.target.value+'px';});
+        document.getElementById('help-btn').addEventListener('click',showHelp);
+        document.getElementById('upgrade-btn').addEventListener('click',showUpgrade);
+        document.querySelectorAll('.suggestion-card').forEach(card=>{card.addEventListener('click',()=>{const prompt=card.dataset.prompt||card.textContent.trim(); chatInput.value=prompt; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=prompt.length; chatInput.focus(); if(prompt.trim()&&!state.isGenerating) sendMessage(prompt);});});
+        document.getElementById('emoji-btn').addEventListener('click',()=>{const emojis=['😊','🔥','✨','🚀','💡','🎯','📌','✅','🎉','💪','🤖','🧠']; const pick=emojis[Math.floor(Math.random()*emojis.length)]; chatInput.value+=pick; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();});
+        document.getElementById('upload-btn').addEventListener('click',()=>{const input=document.createElement('input'); input.type='file'; input.accept='image/*,.pdf,.txt,.md'; input.click(); input.onchange=(e)=>{const file=e.target.files?.[0]; if(file){const reader=new FileReader(); reader.onload=(ev)=>{const content=ev.target?.result; if(typeof content==='string'){chatInput.value+=`\n[Upload: ${file.name}]\n${content.slice(0,200)}...`;}else{chatInput.value+=`\n[Upload: ${file.name}]`;} chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; if(file.type.startsWith('text/')||file.name.endsWith('.md')||file.name.endsWith('.txt')){reader.readAsText(file);}else{chatInput.value+=`\n[Upload: ${file.name} (gambar)]`; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}}};});
+        document.getElementById('voice-btn').addEventListener('click',()=>{if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const recognizer=new SR(); recognizer.lang='id-ID'; recognizer.interimResults=false; recognizer.onresult=(e)=>{const transcript=e.results[0][0].transcript; chatInput.value+=transcript; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; recognizer.start();}else{alert('Voice input tidak didukung di browser ini.');}});
+        document.getElementById('export-txt').addEventListener('click',()=>exportChat('txt'));
+        document.getElementById('export-md').addEventListener('click',()=>exportChat('md'));
+        document.getElementById('import-btn').addEventListener('click',importChat);
+        stopBtn.addEventListener('click',()=>{
+            if(activeController) activeController.abort();
+            state.isGenerating=false;
+            sendBtn.disabled=false;
+            stopBtn.classList.add('hidden');
+        });
+        document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault(); newChat();} if(e.key==='Escape') closeSidebarMobile();});
+        chatInput.focus();
+        window.addEventListener('resize',()=>{if(window.innerWidth>768){sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); if(!sidebarVisible){sidebarVisible=true; sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`;}}});
+        console.log('🚀 Zeph AI v2.1 ready! (settings modal + stop fix)');
     }
     if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',init); }else{ init(); }
-})();2
+})();
