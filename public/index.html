@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Zeph AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
@@ -12,21 +12,61 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        html { font-family:'Inter',sans-serif; height:100%; }
-        body { background:#0A0A0A; color:#fff; overflow:hidden; height:100%; margin:0; padding:0; }
-        #app { display:flex; height:100dvh; width:100vw; overflow:hidden; }
-        #sidebar { width:280px; min-width:280px; background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); border-right:1px solid rgba(255,255,255,0.05); display:flex; flex-direction:column; height:100%; overflow:hidden; z-index:50; transition:all 0.3s; flex-shrink:0; }
-        #sidebar.desktop-hidden { width:0 !important; min-width:0 !important; overflow:hidden; border-right:none; padding:0; }
-        @media(max-width:768px){ #sidebar{ position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); width:280px; z-index:100; } #sidebar.mobile-open{ transform:translateX(0); } #sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99; } #sidebar-overlay.active{ display:block; } }
-        #chat-area { flex:1; display:flex; flex-direction:column; height:100dvh; overflow:hidden; background:#0A0A0A; min-width:0; }
-        #chat-messages { flex:1; overflow-y:auto; padding:16px 20px 8px; -webkit-overflow-scrolling:touch; }
+        html, body { height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#0A0A0A; color:#fff; }
+        #app { display:flex; height:100vh; width:100vw; overflow:hidden; }
+        
+        /* ── SIDEBAR: PASTI MUNCUL DI DESKTOP ── */
+        #sidebar { 
+            width:280px; 
+            min-width:280px; 
+            background:rgba(10,10,10,0.95); 
+            backdrop-filter:blur(20px); 
+            border-right:1px solid rgba(255,255,255,0.05); 
+            display:flex !important; 
+            flex-direction:column; 
+            height:100vh; 
+            overflow:hidden; 
+            z-index:50; 
+            transition:all 0.3s ease; 
+            flex-shrink:0; 
+            position:relative;
+            transform:translateX(0) !important;
+        }
+        #sidebar.desktop-hidden { 
+            width:0 !important; 
+            min-width:0 !important; 
+            overflow:hidden; 
+            border-right:none; 
+            padding:0; 
+            margin:0; 
+            flex-shrink:0; 
+            transform:translateX(-100%) !important;
+        }
+        
+        @media(max-width:768px){ 
+            #sidebar{ 
+                position:fixed; 
+                left:0; 
+                top:0; 
+                bottom:0; 
+                transform:translateX(-100%); 
+                width:280px; 
+                z-index:100; 
+            } 
+            #sidebar.mobile-open{ transform:translateX(0) !important; } 
+            #sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99; } 
+            #sidebar-overlay.active{ display:block; } 
+        }
+        
+        #chat-area { flex:1; display:flex; flex-direction:column; height:100vh; overflow:hidden; background:#0A0A0A; min-width:0; }
+        #chat-messages { flex:1; overflow-y:auto; padding:16px 20px 8px; }
         .message-group { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; width:100%; }
         .message-user { align-items:flex-end; }
         .message-ai { align-items:flex-start; }
         .bubble-user { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:80%; }
         .bubble-ai { background:rgba(24,24,24,0.70); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 18px 4px; padding:10px 16px; max-width:80%; }
         .avatar-ring { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.85rem; flex-shrink:0; }
-        #chat-input-wrap { padding:10px 16px 16px; background:transparent; flex-shrink:0; position:relative; z-index:10; }
+        #chat-input-wrap { padding:10px 16px 16px; background:transparent; flex-shrink:0; min-height:60px; }
         #chat-input-inner { background:rgba(24,24,24,0.80); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:6px 10px; display:flex; align-items:flex-end; gap:6px; }
         #chat-input-inner textarea { flex:1; background:transparent; border:none; outline:none; color:#f0f0f0; font-size:0.95rem; font-family:'Inter',sans-serif; resize:none; min-height:28px; max-height:160px; padding:6px 4px; line-height:1.5; }
         #chat-input-inner textarea::placeholder { color:#666; }
@@ -49,47 +89,36 @@
         .suggestion-card:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.12); color:#fff; transform:translateY(-2px); }
         .suggestion-card .icon { font-size:1.4rem; display:block; margin-bottom:4px; }
 
-        @media(max-width:768px){ #chat-messages { padding:10px 10px 6px; } #chat-input-wrap { padding:6px 10px 12px; } #chat-input-inner { padding:4px 8px; border-radius:16px; gap:4px; flex-wrap:nowrap; } #chat-input-inner textarea { font-size:0.85rem; min-height:20px; max-height:100px; padding:4px 2px; } #chat-input-inner button { padding:4px 5px; } #chat-input-inner button svg { width:18px; height:18px; } #send-btn { padding:4px 10px; font-size:0.7rem; border-radius:12px; } #send-btn svg { width:14px; height:14px; } .bubble-user, .bubble-ai { max-width:90%; padding:8px 12px; font-size:0.85rem; } .avatar-ring { width:26px; height:26px; font-size:0.65rem; } header { padding:4px 10px !important; } .model-select { font-size:0.65rem; padding:2px 6px; } .suggestion-grid { grid-template-columns:repeat(2,1fr); gap:6px; padding:0 4px; } .suggestion-card { padding:8px 6px; font-size:0.7rem; } }
-        @media(max-width:480px){ #chat-messages { padding:6px 6px 4px; } #chat-input-wrap { padding:4px 6px 10px; } #chat-input-inner { padding:4px 6px; border-radius:14px; gap:3px; } #chat-input-inner textarea { font-size:0.8rem; min-height:18px; max-height:80px; padding:2px 2px; } #chat-input-inner button { padding:3px 4px; } #chat-input-inner button svg { width:16px; height:16px; } #send-btn { padding:3px 8px; font-size:0.6rem; border-radius:10px; } #send-btn svg { width:12px; height:12px; } .bubble-user, .bubble-ai { max-width:95%; padding:6px 10px; font-size:0.8rem; } .avatar-ring { width:22px; height:22px; font-size:0.55rem; } }
-
-        /* ─── SETTINGS PANEL ─── */
-        .settings-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; z-index: 1000;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        /* ── MOBILE ── */
+        @media(max-width:768px){
+            #chat-messages { padding:10px 10px 6px; }
+            #chat-input-wrap { padding:6px 10px 12px; min-height:50px; }
+            #chat-input-inner { padding:4px 8px; border-radius:16px; gap:4px; }
+            #chat-input-inner textarea { font-size:0.85rem; min-height:20px; max-height:100px; padding:4px 2px; }
+            #chat-input-inner button { padding:4px 5px; }
+            #chat-input-inner button svg { width:18px; height:18px; }
+            #send-btn { padding:4px 10px; font-size:0.7rem; border-radius:12px; }
+            #send-btn svg { width:14px; height:14px; }
+            .bubble-user, .bubble-ai { max-width:90%; padding:8px 12px; font-size:0.85rem; }
+            .avatar-ring { width:26px; height:26px; font-size:0.65rem; }
+            header { padding:4px 10px !important; }
+            .model-select { font-size:0.65rem; padding:2px 6px; }
+            .suggestion-grid { grid-template-columns:repeat(2,1fr); gap:6px; padding:0 4px; }
+            .suggestion-card { padding:8px 6px; font-size:0.7rem; }
+            #chat-input-wrap .text-xs { font-size:0.55rem; }
         }
-        .settings-overlay.active { opacity: 1; pointer-events: auto; }
-        .settings-panel {
-            background: #141414; border: 1px solid rgba(255,255,255,0.07); border-radius: 24px;
-            padding: 32px 36px; max-width: 560px; width: 92%; max-height: 80vh; overflow-y: auto;
-            transform: scale(0.96); transition: transform 0.3s ease;
+        @media(max-width:480px){
+            #chat-messages { padding:6px 6px 4px; }
+            #chat-input-wrap { padding:4px 6px 10px; min-height:44px; }
+            #chat-input-inner { padding:4px 6px; border-radius:14px; gap:3px; }
+            #chat-input-inner textarea { font-size:0.8rem; min-height:18px; max-height:80px; padding:2px 2px; }
+            #chat-input-inner button { padding:3px 4px; }
+            #chat-input-inner button svg { width:16px; height:16px; }
+            #send-btn { padding:3px 8px; font-size:0.6rem; border-radius:10px; }
+            #send-btn svg { width:12px; height:12px; }
+            .bubble-user, .bubble-ai { max-width:95%; padding:6px 10px; font-size:0.8rem; }
+            .avatar-ring { width:22px; height:22px; font-size:0.55rem; }
         }
-        .settings-overlay.active .settings-panel { transform: scale(1); }
-        .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .settings-header h2 { font-size: 1.5rem; font-weight: 600; }
-        .settings-close { background: transparent; border: none; color: #888; font-size: 1.6rem; cursor: pointer; padding: 0 8px; }
-        .settings-close:hover { color: #fff; }
-        .settings-section { margin-bottom: 24px; }
-        .settings-section h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin-bottom: 12px; }
-        .setting-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
-        .setting-item label { color: #aaa; }
-        .setting-item .setting-value { color: #eee; }
-        .setting-item select, .setting-item input[type="range"] {
-            background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); color: #eee;
-            border-radius: 8px; padding: 4px 10px; font-size: 0.85rem; outline: none; width: 140px;
-        }
-        .setting-item input[type="range"] { width: 140px; padding: 0; background: transparent; accent-color: #888; }
-        .setting-checkbox { display: flex; align-items: center; gap: 10px; color: #aaa; font-size: 0.9rem; padding: 4px 0; cursor: pointer; }
-        .setting-checkbox input[type="checkbox"] { accent-color: #888; width: 16px; height: 16px; cursor: pointer; }
-        .settings-link { color: #888; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
-        .settings-link:hover { color: #fff; }
-        #fontsize-label { color: #eee; font-size: 0.85rem; min-width: 40px; text-align: right; }
-        .settings-actions { display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end; }
-        .settings-actions button { padding: 8px 24px; border-radius: 12px; border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-        .settings-actions .btn-save { background: rgba(255,255,255,0.1); color: #fff; }
-        .settings-actions .btn-save:hover { background: rgba(255,255,255,0.2); }
-        .settings-actions .btn-cancel { background: transparent; color: #888; }
-        .settings-actions .btn-cancel:hover { color: #fff; }
     </style>
 </head>
 <body>
@@ -120,10 +149,22 @@
             <div id="fav-list" class="space-y-0.5"></div>
         </div>
         <div class="border-t border-white/5 p-3 flex-shrink-0 space-y-0.5">
-            <div class="sidebar-link" id="settings-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Settings</div>
-            <div class="sidebar-link" id="help-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Help</div>
-            <div class="sidebar-link" id="upgrade-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> Upgrade <span class="badge-pro ml-auto">Pro</span></div>
-            <div class="sidebar-link" id="toggle-sidebar-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar</div>
+            <div class="sidebar-link" id="settings-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Settings
+            </div>
+            <div class="sidebar-link" id="help-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Help
+            </div>
+            <div class="sidebar-link" id="upgrade-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                Upgrade <span class="badge-pro ml-auto">Pro</span>
+            </div>
+            <div class="sidebar-link" id="toggle-sidebar-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                Hide Sidebar
+            </div>
         </div>
     </aside>
 
@@ -203,111 +244,8 @@
             </div>
         </div>
     </div>
-
-    <!-- ─── SETTINGS PANEL ─── -->
-    <div id="settings-overlay" class="settings-overlay">
-        <div class="settings-panel">
-            <div class="settings-header">
-                <h2>⚙️ Settings</h2>
-                <button id="settings-close" class="settings-close">✕</button>
-            </div>
-            <div class="settings-body">
-                <div class="settings-section">
-                    <h3>General</h3>
-                    <div class="setting-item">
-                        <label>Theme</label>
-                        <select id="set-theme">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>Language</label>
-                        <select id="set-lang">
-                            <option value="id">Indonesia</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>Font Size</label>
-                        <input type="range" id="set-fontsize" min="12" max="20" value="15" />
-                        <span id="fontsize-label">15px</span>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Chat</h3>
-                    <label class="setting-checkbox">
-                        <input type="checkbox" id="set-history" checked /> Chat History
-                    </label>
-                    <label class="setting-checkbox">
-                        <input type="checkbox" id="set-autoscroll" checked /> Auto Scroll
-                    </label>
-                    <label class="setting-checkbox">
-                        <input type="checkbox" id="set-streaming" checked /> Streaming Response
-                    </label>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Appearance</h3>
-                    <div class="setting-item">
-                        <label>Sidebar Width</label>
-                        <input type="range" id="set-sidebarwidth" min="220" max="360" value="280" />
-                    </div>
-                    <div class="setting-item">
-                        <label>Bubble Radius</label>
-                        <input type="range" id="set-bubbleradius" min="8" max="32" value="18" />
-                    </div>
-                    <div class="setting-item">
-                        <label>Animation Speed</label>
-                        <select id="set-animspeed">
-                            <option value="fast">Fast</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="slow">Slow</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Account</h3>
-                    <div class="setting-item">
-                        <label>Username</label>
-                        <span class="setting-value">User</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>Email</label>
-                        <span class="setting-value">user@zeph.ai</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>Subscription</label>
-                        <span class="setting-value badge-pro">Free</span>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>About</h3>
-                    <div class="setting-item">
-                        <label>Version</label>
-                        <span class="setting-value">1.0.0</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>Developer</label>
-                        <span class="setting-value">Zeph Labs</span>
-                    </div>
-                    <div class="setting-item" style="flex-direction:row; gap:16px; justify-content:flex-start;">
-                        <a href="#" class="settings-link">Privacy</a>
-                        <a href="#" class="settings-link">Terms</a>
-                    </div>
-                </div>
-            </div>
-            <div class="settings-actions">
-                <button class="btn-cancel" id="settings-cancel">Cancel</button>
-                <button class="btn-save" id="settings-save">Save Settings</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script src="/js/app.js"></script>
 </body>
-</html>
+</html>w
