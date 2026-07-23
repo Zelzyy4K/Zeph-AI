@@ -10,119 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        html, body { height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#0A0A0A; color:#fff; }
-        #app { display:flex; height:100vh; width:100vw; overflow:hidden; }
-        
-        #sidebar { 
-            width:280px; 
-            min-width:280px; 
-            background:rgba(10,10,10,0.95); 
-            backdrop-filter:blur(20px); 
-            border-right:1px solid rgba(255,255,255,0.05); 
-            display:flex !important; 
-            flex-direction:column; 
-            height:100vh; 
-            overflow:hidden; 
-            z-index:50; 
-            transition:all 0.3s ease; 
-            flex-shrink:0; 
-            position:relative;
-            transform:translateX(0) !important;
-        }
-        #sidebar.desktop-hidden { 
-            width:0 !important; 
-            min-width:0 !important; 
-            overflow:hidden; 
-            border-right:none; 
-            padding:0; 
-            margin:0; 
-            flex-shrink:0; 
-            transform:translateX(-100%) !important;
-        }
-        
-        @media(max-width:768px){ 
-            #sidebar{ 
-                position:fixed; 
-                left:0; 
-                top:0; 
-                bottom:0; 
-                transform:translateX(-100%); 
-                width:280px; 
-                z-index:100; 
-                height:100vh !important; 
-                max-height:100vh !important; 
-                overflow-y:auto !important; 
-                overflow-x:hidden !important;
-            } 
-            #sidebar.mobile-open{ transform:translateX(0) !important; } 
-            #sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99; } 
-            #sidebar-overlay.active{ display:block; } 
-        }
-        
-        #chat-area { flex:1; display:flex; flex-direction:column; height:100vh; overflow:hidden; background:#0A0A0A; min-width:0; }
-        #chat-messages { flex:1; overflow-y:auto; padding:16px 20px 8px; }
-        .message-group { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; width:100%; }
-        .message-user { align-items:flex-end; }
-        .message-ai { align-items:flex-start; }
-        .bubble-user { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:80%; }
-        .bubble-ai { background:rgba(24,24,24,0.70); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 18px 4px; padding:10px 16px; max-width:80%; }
-        .avatar-ring { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.85rem; flex-shrink:0; }
-        #chat-input-wrap { padding:10px 16px 16px; background:transparent; flex-shrink:0; min-height:60px; }
-        #chat-input-inner { background:rgba(24,24,24,0.80); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:6px 10px; display:flex; align-items:flex-end; gap:6px; }
-        #chat-input-inner textarea { flex:1; background:transparent; border:none; outline:none; color:#f0f0f0; font-size:0.95rem; font-family:'Inter',sans-serif; resize:none; min-height:28px; max-height:160px; padding:6px 4px; line-height:1.5; }
-        #chat-input-inner textarea::placeholder { color:#666; }
-        #chat-input-inner button { background:transparent; border:none; color:#888; cursor:pointer; padding:6px 8px; border-radius:12px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        #chat-input-inner button:hover { color:#fff; background:rgba(255,255,255,0.06); }
-        #send-btn { background:rgba(255,255,255,0.08); color:#fff; padding:6px 14px; border-radius:14px; font-weight:500; font-size:0.85rem; gap:4px; }
-        #send-btn:hover { background:rgba(255,255,255,0.16); }
-        #send-btn:disabled { opacity:0.4; cursor:not-allowed; }
-        .logo-text { font-weight:700; font-size:1.2rem; background:linear-gradient(135deg,#fff 40%,#aaa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .sidebar-link { display:flex; align-items:center; gap:12px; padding:8px 14px; border-radius:12px; color:#aaa; font-size:0.9rem; transition:all 0.2s; cursor:pointer; }
-        .sidebar-link:hover { background:rgba(255,255,255,0.05); color:#fff; }
-        .history-item { display:flex; align-items:center; gap:10px; padding:6px 14px; border-radius:10px; color:#999; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
-        .history-item:hover { background:rgba(255,255,255,0.04); color:#eee; }
-        .badge-pro { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.06); border-radius:20px; padding:2px 12px; font-size:0.65rem; color:#aaa; }
-        .model-select { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; color:#eee; padding:4px 12px; font-size:0.8rem; font-family:'Inter',sans-serif; outline:none; cursor:pointer; }
-        .fade-in { animation:fadeIn 0.35s ease forwards; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        .suggestion-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; max-width:640px; margin:18px auto 0; width:100%; }
-        .suggestion-card { background:rgba(24,24,24,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px 14px; text-align:center; font-size:0.85rem; color:#bbb; cursor:pointer; transition:all 0.25s; }
-        .suggestion-card:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.12); color:#fff; transform:translateY(-2px); }
-        .suggestion-card .icon { font-size:1.4rem; display:block; margin-bottom:4px; }
-
-        @media(max-width:768px){
-            #chat-messages { padding:10px 10px 6px; }
-            #chat-input-wrap { padding:6px 10px 12px; min-height:50px; }
-            #chat-input-inner { padding:4px 8px; border-radius:16px; gap:4px; }
-            #chat-input-inner textarea { font-size:0.85rem; min-height:20px; max-height:100px; padding:4px 2px; }
-            #chat-input-inner button { padding:4px 5px; }
-            #chat-input-inner button svg { width:18px; height:18px; }
-            #send-btn { padding:4px 10px; font-size:0.7rem; border-radius:12px; }
-            #send-btn svg { width:14px; height:14px; }
-            .bubble-user, .bubble-ai { max-width:90%; padding:8px 12px; font-size:0.85rem; }
-            .avatar-ring { width:26px; height:26px; font-size:0.65rem; }
-            header { padding:4px 10px !important; }
-            .model-select { font-size:0.65rem; padding:2px 6px; }
-            .suggestion-grid { grid-template-columns:repeat(2,1fr); gap:6px; padding:0 4px; }
-            .suggestion-card { padding:8px 6px; font-size:0.7rem; }
-            #chat-input-wrap .text-xs { font-size:0.55rem; }
-        }
-        @media(max-width:480px){
-            #chat-messages { padding:6px 6px 4px; }
-            #chat-input-wrap { padding:4px 6px 10px; min-height:44px; }
-            #chat-input-inner { padding:4px 6px; border-radius:14px; gap:3px; }
-            #chat-input-inner textarea { font-size:0.8rem; min-height:18px; max-height:80px; padding:2px 2px; }
-            #chat-input-inner button { padding:3px 4px; }
-            #chat-input-inner button svg { width:16px; height:16px; }
-            #send-btn { padding:3px 8px; font-size:0.6rem; border-radius:10px; }
-            #send-btn svg { width:12px; height:12px; }
-            .bubble-user, .bubble-ai { max-width:95%; padding:6px 10px; font-size:0.8rem; }
-            .avatar-ring { width:22px; height:22px; font-size:0.55rem; }
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="styles.css" />
+    </head>
 <body>
 <div id="app">
     <div id="sidebar-overlay"></div>
@@ -243,6 +132,73 @@
             <div class="text-xs text-white/20 mt-2 px-1 flex justify-between">
                 <span>Enter ↵ kirim · Shift+Enter baris baru</span>
                 <span id="char-counter">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-overlay">
+        <div class="settings-box">
+            <button id="settings-close" class="settings-close-btn" title="Tutup">&times;</button>
+            <h2>Pengaturan</h2>
+
+            <div class="setting-group">
+                <label>Tema</label>
+                <select id="set-theme">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Bahasa</label>
+                <select id="set-lang">
+                    <option value="id">Indonesia</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Ukuran Font (<span id="fontsize-label">15px</span>)</label>
+                <input type="range" id="set-fontsize" min="12" max="20" step="1" />
+            </div>
+
+            <div class="setting-group setting-row">
+                <label style="margin-bottom:0;">Simpan riwayat chat</label>
+                <input type="checkbox" id="set-history" />
+            </div>
+
+            <div class="setting-group setting-row">
+                <label style="margin-bottom:0;">Auto-scroll</label>
+                <input type="checkbox" id="set-autoscroll" />
+            </div>
+
+            <div class="setting-group setting-row">
+                <label style="margin-bottom:0;">Streaming respons</label>
+                <input type="checkbox" id="set-streaming" />
+            </div>
+
+            <div class="setting-group">
+                <label>Lebar Sidebar (px)</label>
+                <input type="range" id="set-sidebarwidth" min="220" max="360" step="10" />
+            </div>
+
+            <div class="setting-group">
+                <label>Radius Bubble Chat (px)</label>
+                <input type="range" id="set-bubbleradius" min="4" max="28" step="1" />
+            </div>
+
+            <div class="setting-group">
+                <label>Kecepatan Animasi</label>
+                <select id="set-animspeed">
+                    <option value="fast">Cepat</option>
+                    <option value="normal">Normal</option>
+                    <option value="slow">Lambat</option>
+                </select>
+            </div>
+
+            <div class="settings-actions">
+                <button id="settings-cancel">Batal</button>
+                <button id="settings-save">Simpan</button>
             </div>
         </div>
     </div>
