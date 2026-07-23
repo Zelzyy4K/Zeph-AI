@@ -1,4 +1,4 @@
-// Zeph AI - Frontend Logic (FINAL - DARK/LIGHT MODE FIXED)
+// Zeph AI - Frontend Logic (FINAL - LIGHT MODE TEXT BLACK)
 (function() {
     'use strict';
     const state = {
@@ -55,33 +55,99 @@
     
     // ── APPLY SETTINGS (TERMASUK THEME) ──
     function applySettings(){ 
-        // THEME
         if(state.settings.theme === 'light'){ 
             document.body.classList.add('light-mode'); 
             document.body.style.background = '#f5f5f5';
             document.body.style.color = '#111';
-            // Update chat area
+            
+            // Chat area
             const chatArea = document.getElementById('chat-area');
             if(chatArea) chatArea.style.background = '#f5f5f5';
-            // Update sidebar
+            
+            // Sidebar
             if(sidebar) {
                 sidebar.style.background = 'rgba(245,245,245,0.95)';
                 sidebar.style.borderColor = 'rgba(0,0,0,0.05)';
             }
-            // Update input
+            
+            // Sidebar text
+            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs, .badge-pro').forEach(el => {
+                el.style.color = '#111';
+            });
+            document.querySelectorAll('.history-item .text-white\\/30').forEach(el => {
+                el.style.color = '#888';
+            });
+            
+            // Welcome screen
+            document.querySelectorAll('#welcome-screen h1, #welcome-screen p, #welcome-screen .text-white, #welcome-screen .text-white\\/50').forEach(el => {
+                el.style.color = '#111';
+            });
+            document.querySelectorAll('#welcome-screen .text-white\\/50').forEach(el => {
+                el.style.color = '#555';
+            });
+            
+            // Suggestion cards
+            document.querySelectorAll('.suggestion-card').forEach(el => {
+                el.style.color = '#333';
+                el.style.background = 'rgba(255,255,255,0.6)';
+                el.style.borderColor = 'rgba(0,0,0,0.06)';
+            });
+            
+            // Input
             const inputInner = document.getElementById('chat-input-inner');
             if(inputInner) {
                 inputInner.style.background = 'rgba(255,255,255,0.8)';
                 inputInner.style.borderColor = 'rgba(0,0,0,0.06)';
             }
             const textarea = document.querySelector('#chat-input-inner textarea');
-            if(textarea) textarea.style.color = '#111';
-            // Update bubbles
+            if(textarea) {
+                textarea.style.color = '#111';
+                textarea.style.background = 'transparent';
+            }
+            const inputPlaceholder = document.querySelector('#chat-input-inner textarea::placeholder');
+            if(inputPlaceholder) inputPlaceholder.style.color = '#888';
+            
+            // Input buttons
+            document.querySelectorAll('#chat-input-inner button').forEach(el => {
+                el.style.color = '#666';
+            });
+            document.querySelectorAll('#chat-input-inner button:hover').forEach(el => {
+                el.style.color = '#111';
+            });
+            
+            // Send button
+            const sendBtnEl = document.getElementById('send-btn');
+            if(sendBtnEl) {
+                sendBtnEl.style.color = '#111';
+                sendBtnEl.style.background = 'rgba(0,0,0,0.06)';
+            }
+            
+            // Header
+            const header = document.querySelector('header');
+            if(header) {
+                header.style.background = 'rgba(245,245,245,0.9)';
+                header.style.borderColor = 'rgba(0,0,0,0.05)';
+            }
+            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60').forEach(el => {
+                el.style.color = '#333';
+            });
+            
+            // Model select
+            const modelSel = document.querySelector('.model-select');
+            if(modelSel) {
+                modelSel.style.color = '#111';
+                modelSel.style.background = 'rgba(0,0,0,0.04)';
+                modelSel.style.borderColor = 'rgba(0,0,0,0.06)';
+            }
+            
+            // Bubble user
             document.querySelectorAll('.bubble-user').forEach(el => {
                 el.style.background = 'rgba(0,0,0,0.05)';
                 el.style.borderColor = 'rgba(0,0,0,0.08)';
                 el.style.color = '#111';
             });
+            
+            // Bubble AI
             document.querySelectorAll('.bubble-ai').forEach(el => {
                 el.style.background = 'rgba(255,255,255,0.8)';
                 el.style.borderColor = 'rgba(0,0,0,0.06)';
@@ -90,31 +156,141 @@
             document.querySelectorAll('.bubble-ai .markdown-body').forEach(el => {
                 el.style.color = '#111';
             });
-            // Update header
-            const header = document.querySelector('header');
-            if(header) header.style.background = '#f5f5f5/80';
+            document.querySelectorAll('.bubble-ai .markdown-body code, .bubble-ai .markdown-body pre').forEach(el => {
+                el.style.color = '#111';
+                el.style.background = '#f0f0f0';
+            });
+            
+            // Bubble timestamps
+            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20').forEach(el => {
+                el.style.color = '#999';
+            });
+            
+            // Avatar
+            document.querySelectorAll('.avatar-ring').forEach(el => {
+                el.style.background = 'rgba(0,0,0,0.05)';
+                el.style.borderColor = 'rgba(0,0,0,0.06)';
+                el.style.color = '#111';
+            });
+            
+            // Char counter
+            const counter = document.getElementById('char-counter');
+            if(counter) counter.style.color = '#888';
+            
+            // History
+            document.querySelectorAll('.history-item').forEach(el => {
+                el.style.color = '#444';
+            });
+            document.querySelectorAll('.history-item:hover').forEach(el => {
+                el.style.background = 'rgba(0,0,0,0.04)';
+                el.style.color = '#111';
+            });
+            
+            // Settings panel
+            const settingsBox = document.querySelector('.settings-panel');
+            if(settingsBox) {
+                settingsBox.style.background = '#f5f5f5';
+                settingsBox.style.borderColor = 'rgba(0,0,0,0.06)';
+            }
+            document.querySelectorAll('.settings-panel h2, .settings-panel .setting-item label, .settings-panel .setting-item .setting-value, .settings-panel .setting-checkbox, .settings-panel .settings-section h3, .settings-panel .settings-link').forEach(el => {
+                el.style.color = '#111';
+            });
+            document.querySelectorAll('.settings-panel .setting-item select, .settings-panel .setting-item input[type="range"]').forEach(el => {
+                el.style.background = '#fff';
+                el.style.color = '#111';
+                el.style.borderColor = 'rgba(0,0,0,0.1)';
+            });
+            document.querySelectorAll('.settings-panel .settings-close').forEach(el => {
+                el.style.color = '#888';
+            });
+            document.querySelectorAll('.settings-panel .settings-close:hover').forEach(el => {
+                el.style.color = '#111';
+            });
+            document.querySelectorAll('.settings-panel .btn-save').forEach(el => {
+                el.style.color = '#111';
+                el.style.background = 'rgba(0,0,0,0.05)';
+            });
+            document.querySelectorAll('.settings-panel .btn-cancel').forEach(el => {
+                el.style.color = '#888';
+            });
+            
+            // Toggle sidebar button
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+            if(toggleBtn) toggleBtn.style.color = '#444';
+            
         } else { 
             document.body.classList.remove('light-mode'); 
             document.body.style.background = '#0A0A0A';
             document.body.style.color = '#FFFFFF';
+            
             const chatArea = document.getElementById('chat-area');
             if(chatArea) chatArea.style.background = '#0A0A0A';
+            
             if(sidebar) {
                 sidebar.style.background = 'rgba(10,10,10,0.95)';
                 sidebar.style.borderColor = 'rgba(255,255,255,0.05)';
             }
+            
+            // Reset sidebar text
+            document.querySelectorAll('.sidebar-link, .history-item, .logo-text, .text-white, .text-white\\/70, .text-white\\/30, .text-white\\/20, .text-xs, .badge-pro').forEach(el => {
+                el.style.color = '';
+            });
+            
+            // Reset welcome
+            document.querySelectorAll('#welcome-screen h1, #welcome-screen p, #welcome-screen .text-white, #welcome-screen .text-white\\/50').forEach(el => {
+                el.style.color = '';
+            });
+            
+            // Reset suggestion cards
+            document.querySelectorAll('.suggestion-card').forEach(el => {
+                el.style.color = '';
+                el.style.background = '';
+                el.style.borderColor = '';
+            });
+            
             const inputInner = document.getElementById('chat-input-inner');
             if(inputInner) {
                 inputInner.style.background = 'rgba(24,24,24,0.80)';
                 inputInner.style.borderColor = 'rgba(255,255,255,0.07)';
             }
             const textarea = document.querySelector('#chat-input-inner textarea');
-            if(textarea) textarea.style.color = '#f0f0f0';
+            if(textarea) {
+                textarea.style.color = '#f0f0f0';
+                textarea.style.background = 'transparent';
+            }
+            
+            document.querySelectorAll('#chat-input-inner button').forEach(el => {
+                el.style.color = '#888';
+            });
+            
+            const sendBtnEl = document.getElementById('send-btn');
+            if(sendBtnEl) {
+                sendBtnEl.style.color = '#fff';
+                sendBtnEl.style.background = 'rgba(255,255,255,0.08)';
+            }
+            
+            const header = document.querySelector('header');
+            if(header) {
+                header.style.background = '#0A0A0A/80';
+                header.style.borderColor = 'rgba(255,255,255,0.05)';
+            }
+            document.querySelectorAll('header .text-white, header .text-white\\/40, header .text-white\\/60').forEach(el => {
+                el.style.color = '';
+            });
+            
+            const modelSel = document.querySelector('.model-select');
+            if(modelSel) {
+                modelSel.style.color = '#eee';
+                modelSel.style.background = 'rgba(255,255,255,0.04)';
+                modelSel.style.borderColor = 'rgba(255,255,255,0.06)';
+            }
+            
             document.querySelectorAll('.bubble-user').forEach(el => {
                 el.style.background = 'rgba(255,255,255,0.08)';
                 el.style.borderColor = 'rgba(255,255,255,0.06)';
                 el.style.color = '#FFFFFF';
             });
+            
             document.querySelectorAll('.bubble-ai').forEach(el => {
                 el.style.background = 'rgba(24,24,24,0.70)';
                 el.style.borderColor = 'rgba(255,255,255,0.06)';
@@ -123,8 +299,54 @@
             document.querySelectorAll('.bubble-ai .markdown-body').forEach(el => {
                 el.style.color = '#e8e8e8';
             });
-            const header = document.querySelector('header');
-            if(header) header.style.background = '#0A0A0A/80';
+            document.querySelectorAll('.bubble-ai .markdown-body code, .bubble-ai .markdown-body pre').forEach(el => {
+                el.style.color = '';
+                el.style.background = '';
+            });
+            
+            document.querySelectorAll('.bubble-user .text-white\\/20, .bubble-ai .text-white\\/20').forEach(el => {
+                el.style.color = '';
+            });
+            
+            document.querySelectorAll('.avatar-ring').forEach(el => {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            });
+            
+            const counter = document.getElementById('char-counter');
+            if(counter) counter.style.color = '';
+            
+            document.querySelectorAll('.history-item').forEach(el => {
+                el.style.color = '';
+            });
+            
+            const settingsBox = document.querySelector('.settings-panel');
+            if(settingsBox) {
+                settingsBox.style.background = '#141414';
+                settingsBox.style.borderColor = 'rgba(255,255,255,0.07)';
+            }
+            document.querySelectorAll('.settings-panel h2, .settings-panel .setting-item label, .settings-panel .setting-item .setting-value, .settings-panel .setting-checkbox, .settings-panel .settings-section h3, .settings-panel .settings-link').forEach(el => {
+                el.style.color = '';
+            });
+            document.querySelectorAll('.settings-panel .setting-item select, .settings-panel .setting-item input[type="range"]').forEach(el => {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderColor = '';
+            });
+            document.querySelectorAll('.settings-panel .settings-close').forEach(el => {
+                el.style.color = '';
+            });
+            document.querySelectorAll('.settings-panel .btn-save').forEach(el => {
+                el.style.color = '';
+                el.style.background = '';
+            });
+            document.querySelectorAll('.settings-panel .btn-cancel').forEach(el => {
+                el.style.color = '';
+            });
+            
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+            if(toggleBtn) toggleBtn.style.color = '';
         }
         
         // FONT SIZE
@@ -196,12 +418,10 @@
     function showHelp(){ alert('💡 Zeph AI Help\n\n• Enter untuk kirim\n• Shift+Enter untuk baris baru\n• ⭐ untuk favorit\n• Export/Import chat di header'); }
     function showUpgrade(){ alert('🚀 Upgrade ke Zeph Pro\n\n✅ Respons lebih cepat\n✅ Model Vision\n✅ Prioritas antrian\n✅ Chat tanpa batas'); }
     
-    // ── TOGGLE DARK/LIGHT (MANUAL VIA HEADER) ──
     function toggleDarkLight() {
         state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
         applySettings();
         saveState();
-        // Update dropdown di settings
         const themeSelect = document.getElementById('set-theme');
         if(themeSelect) themeSelect.value = state.settings.theme;
     }
@@ -214,7 +434,6 @@
         if(hasSaved&&state.messages.length>0) renderMessages(); 
         else{ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; } 
         
-        // ── EVENTS ──
         sendBtn.addEventListener('click',()=>{const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}); 
         chatInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}}); 
         chatInput.addEventListener('input',()=>{chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length;}); 
@@ -224,7 +443,6 @@
         if(overlay) overlay.addEventListener('click',closeSidebarMobile); 
         modelSelect.addEventListener('change',()=>{state.model=modelSelect.value; saveState();}); 
         
-        // ── DARK MODE TOGGLE (HEADER) ──
         if(darkToggle) darkToggle.addEventListener('click', toggleDarkLight);
         
         clearBtn.addEventListener('click',()=>{if(state.messages.length===0) return; if(confirm('Hapus semua pesan?')){state.messages=[]; renderMessages(); saveState(); saveChatMessages();}}); 
