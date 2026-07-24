@@ -16,7 +16,7 @@ html, body { height:100%; overflow:hidden; font-family:'Inter',sans-serif; backg
     transition:all 0.3s ease;
     flex-shrink:0;
     position:relative;
-    transform:translateX(0) !important;
+    transform:translateX(0);
 }
 #sidebar.desktop-hidden {
     width:0 !important;
@@ -26,7 +26,7 @@ html, body { height:100%; overflow:hidden; font-family:'Inter',sans-serif; backg
     padding:0;
     margin:0;
     flex-shrink:0;
-    transform:translateX(-100%) !important;
+    transform:translateX(-100%);
 }
 
 @media(max-width:768px){
@@ -53,8 +53,10 @@ html, body { height:100%; overflow:hidden; font-family:'Inter',sans-serif; backg
 .message-group { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; width:100%; }
 .message-user { align-items:flex-end; }
 .message-ai { align-items:flex-start; }
-.bubble-user { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:80%; }
-.bubble-ai { background:rgba(24,24,24,0.70); border:1px solid rgba(255,255,255,0.06); border-radius:18px 18px 18px 4px; padding:10px 16px; max-width:80%; }
+.bubble-user { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.06); border-radius:var(--bubble-r,18px) var(--bubble-r,18px) calc(var(--bubble-r,18px) * 0.2) var(--bubble-r,18px); padding:10px 16px; max-width:80%; overflow-wrap:anywhere; word-break:break-word; }
+.bubble-ai { background:rgba(24,24,24,0.70); border:1px solid rgba(255,255,255,0.06); border-radius:var(--bubble-r,18px) var(--bubble-r,18px) var(--bubble-r,18px) calc(var(--bubble-r,18px) * 0.2); padding:10px 16px; max-width:80%; overflow-wrap:anywhere; word-break:break-word; }
+.bubble-user pre, .bubble-ai pre { overflow-x:auto; max-width:100%; }
+.bubble-user .markdown-body, .bubble-ai .markdown-body { overflow-wrap:anywhere; }
 .avatar-ring { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.85rem; flex-shrink:0; }
 #chat-input-wrap { padding:10px 16px 16px; background:transparent; flex-shrink:0; min-height:60px; }
 #chat-input-inner { background:rgba(24,24,24,0.80); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:6px 10px; display:flex; align-items:flex-end; gap:6px; }
