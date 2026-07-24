@@ -1,11 +1,11 @@
-// Zeph AI - Frontend Logic (FINAL - DARK/LIGHT MODE + SETTINGS MODAL + STOP FIX)
+// Zeph AI - Frontend Logic (FIXED)
 (function() {
     'use strict';
     const state = {
         messages: [],
         currentChatId: null,
         isGenerating: false,
-        model: 'mixtral-8x7b-32768',
+        model: 'openai/gpt-oss-20b',
         history: [],
         favorites: [],
         settings: {
@@ -40,6 +40,10 @@
     const searchInput = $('search-chat');
     const charCounter = $('char-counter');
     const toggleSidebarBtn = $('toggle-sidebar-btn');
+    const toggleSidebarLabel = $('toggle-sidebar-label');
+    const toggleSidebarIcon = $('toggle-sidebar-icon');
+    const CHEVRON_LEFT = 'M11 19l-7-7 7-7m8 14l-7-7 7-7'; // « collapse
+    const CHEVRON_RIGHT = 'M13 5l7 7-7 7M5 5l7 7-7 7'; // » expand
     let sidebarVisible = true;
     let activeController = null; // AbortController untuk membatalkan request AI yang sedang berjalan
 
@@ -52,9 +56,14 @@
     function renderMarkdown(text){ try{ const raw=marked.parse(text||''); return DOMPurify.sanitize(raw,{ADD_TAGS:['code','pre','span'],ADD_ATTR:['class','style']}); }catch{ return escapeHtml(text); } }
     function highlightCodeBlocks(container){ container.querySelectorAll('pre code').forEach(block=>{ try{ hljs.highlightElement(block); }catch{} }); }
     function saveState(){ try{ localStorage.setItem('zeph_state',JSON.stringify({ messages:state.messages, history:state.history, favorites:state.favorites, currentChatId:state.currentChatId, model:state.model, settings:state.settings })); }catch{} }
-    function loadState(){ try{ const raw=localStorage.getItem('zeph_state'); if(!raw) return false; const data=JSON.parse(raw); state.messages=data.messages||[]; state.history=data.history||[]; state.favorites=data.favorites||[]; state.currentChatId=data.currentChatId||null; state.model=data.model||'mixtral-8x7b-32768'; state.settings={...state.settings,...(data.settings||{})}; return true; }catch{ return false; } }
+    function loadState(){ try{ const raw=localStorage.getItem('zeph_state'); if(!raw) return false; const data=JSON.parse(raw); state.messages=data.messages||[]; state.history=data.history||[]; state.favorites=data.favorites||[]; state.currentChatId=data.currentChatId||null; state.model=data.model||'openai/gpt-oss-20b'; state.settings={...state.settings,...(data.settings||{})}; return true; }catch{ return false; } }
 
     // ── APPLY SETTINGS ──
+    // NOTE: this function themes elements that must already exist in the DOM.
+    // Always call renderMessages()/renderAll() BEFORE applySettings() whenever
+    // messages/history were just (re)rendered, otherwise the freshly created
+    // elements won't receive the theme colors and will look wrong until the
+    // next settings change.
     function applySettings(){
         if(state.settings.theme === 'light'){
             document.body.classList.add('light-mode');
@@ -368,7 +377,7 @@
         }
     }
 
-    function addHistory(chatId,title,lastMsg){ if(!state.settings.chatHistory) return; const existing=state.history.find(h=>h.id===chatId); if(existing){ existing.title=title; existing.lastMessage=lastMsg; existing.updated=Date.now(); }else{ state.history.unshift({id:chatId,title,lastMessage:lastMsg,updated:Date.now()}); } saveState(); renderAll(); }
+    function addHistory(chatId,title,lastMsg){ if(!state.settings.chatHistory) return; const existing=state.history.find(h=>h.id===chatId); if(existing){ existing.lastMessage=lastMsg; existing.updated=Date.now(); }else{ state.history.unshift({id:chatId,title,lastMessage:lastMsg,updated:Date.now()}); } saveState(); renderAll(); }
     function deleteHistory(chatId){ state.history=state.history.filter(h=>h.id!==chatId); state.favorites=state.favorites.filter(id=>id!==chatId); if(state.currentChatId===chatId){ state.messages=[]; state.currentChatId=null; renderMessages(); } saveState(); renderAll(); }
     function toggleFavorite(chatId){ const idx=state.favorites.indexOf(chatId); if(idx>-1) state.favorites.splice(idx,1); else state.favorites.push(chatId); saveState(); renderAll(); }
     function getChatTitle(chatId){ const h=state.history.find(h=>h.id===chatId); return h?h.title:'Chat baru'; }
@@ -378,7 +387,28 @@
     function loadChat(chatId){ const saved=localStorage.getItem(`zeph_chat_${chatId}`); if(saved){ try{ state.messages=JSON.parse(saved); }catch{ state.messages=[]; } }else{ state.messages=[]; } state.currentChatId=chatId; renderMessages(); renderAll(); saveState(); }
     function saveChatMessages(){ if(state.currentChatId){ localStorage.setItem(`zeph_chat_${state.currentChatId}`,JSON.stringify(state.messages)); } }
     function renderMessages(){ if(!msgContainer) return; const hasMessages=state.messages.length>0; if(!hasMessages){ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; return; } welcomeScreen.style.display='none'; let html=''; state.messages.forEach((msg,idx)=>{const isUser=msg.role==='user'; const avatar=isUser?'U':'Z'; const avatarClass=isUser?'user':'ai'; const bubbleClass=isUser?'bubble-user':'bubble-ai'; const radius=state.settings.bubbleRadius||18; const content=isUser?escapeHtml(msg.content):renderMarkdown(msg.content); const tokenCount=countTokens(msg.content); const wordCount=countWords(msg.content); html+=`<div class="message-group ${isUser?'message-user':'message-ai'} fade-in" data-id="${msg.id||idx}"><div class="flex ${isUser?'flex-row-reverse':'flex-row'} gap-2.5 w-full"><div class="avatar-ring ${avatarClass}">${avatar}</div><div class="${bubbleClass}" style="border-radius:${radius}px;">${content}<div class="text-[10px] text-white/20 mt-1 flex items-center gap-3 flex-wrap"><span>${formatTime(msg.timestamp||Date.now())}</span><span>${wordCount} kata · ${tokenCount} token</span></div></div></div></div>`;}); msgContainer.innerHTML=html; highlightCodeBlocks(msgContainer); msgContainer.querySelectorAll('pre code').forEach((block)=>{const pre=block.closest('pre'); if(!pre) return; const btn=document.createElement('button'); btn.className='absolute top-2 right-2 text-xs text-white/30 hover:text-white/70 bg-black/40 px-2 py-1 rounded border border-white/10 transition'; btn.textContent='Copy'; btn.style.position='absolute'; btn.style.top='8px'; btn.style.right='8px'; pre.style.position='relative'; pre.appendChild(btn); btn.addEventListener('click',()=>{const code=block.textContent||''; navigator.clipboard.writeText(code).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>{});});}); if(state.settings.autoScroll){ setTimeout(()=>{ chatMessages.scrollTop=chatMessages.scrollHeight; },50); } saveChatMessages(); saveState(); }
-    async function sendMessage(text,isEdit=false){ if(!text||!text.trim()) return; const content=text.trim(); if(!state.currentChatId){ state.currentChatId=uid(); const title=truncate(content,40); addHistory(state.currentChatId,title,content); } const userMsg={id:uid(),role:'user',content:content,timestamp:Date.now()}; state.messages.push(userMsg); const h=state.history.find(h=>h.id===state.currentChatId); if(h){ h.title=truncate(content,40); h.lastMessage=content; h.updated=Date.now(); } renderMessages(); chatInput.value=''; chatInput.style.height='auto'; charCounter.textContent='0'; saveState(); if(!isEdit) await callAI(content); }
+    // Only sets the chat title ONCE, when the chat is first created — it no longer
+    // gets overwritten with every new message sent in that conversation.
+    async function sendMessage(text,isEdit=false){
+        if(!text||!text.trim()) return;
+        const content=text.trim();
+        const isNewChat = !state.currentChatId;
+        if(isNewChat){
+            state.currentChatId=uid();
+            const title=truncate(content,40);
+            addHistory(state.currentChatId,title,content);
+        }
+        const userMsg={id:uid(),role:'user',content:content,timestamp:Date.now()};
+        state.messages.push(userMsg);
+        const h=state.history.find(h=>h.id===state.currentChatId);
+        if(h){ h.lastMessage=content; h.updated=Date.now(); }
+        renderMessages();
+        chatInput.value='';
+        chatInput.style.height='auto';
+        charCounter.textContent='0';
+        saveState();
+        if(!isEdit) await callAI(content);
+    }
 
     // ── AI CALL (dengan dukungan pembatalan lewat AbortController) ──
     async function callAI(userContent){
@@ -391,7 +421,11 @@
         state.messages.push(aiMsg);
         renderMessages();
         try{
-            const chatHistory=state.messages.filter(m=>m.content).map(m=>({role:m.role,content:m.content}));
+            // PENTING: pesan AI disimpan sebagai role:'ai' untuk keperluan UI,
+            // tapi Groq/OpenAI API cuma mengenal 'system' | 'user' | 'assistant'.
+            // Tanpa mapping ini, giliran chat kedua dan seterusnya akan gagal
+            // karena riwayat berisi role yang tidak dikenali API.
+            const chatHistory=state.messages.filter(m=>m.content).map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
             const response=await fetch(`${API_BASE}/api/chat`,{
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
@@ -457,13 +491,42 @@
     }
 
     function newChat(){ state.messages=[]; state.currentChatId=null; renderMessages(); chatInput.value=''; charCounter.textContent='0'; chatInput.style.height='auto'; saveState(); chatInput.focus(); }
-    function toggleSidebar(){ if(window.innerWidth<=768){ sidebar.classList.toggle('mobile-open'); overlay.classList.toggle('active'); }else{ sidebarVisible=!sidebarVisible; if(sidebarVisible){ sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`; }else{ sidebar.classList.add('desktop-hidden'); sidebar.style.width='0'; sidebar.style.minWidth='0'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='none'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Show Sidebar`; } } }
+    // Sidebar toggle label kept fully in Bahasa Indonesia to match the rest of the app.
+    function toggleSidebar(){
+        if(window.innerWidth<=768){
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+            return;
+        }
+        sidebarVisible=!sidebarVisible;
+        if(sidebarVisible){
+            sidebar.classList.remove('desktop-hidden');
+            sidebar.style.width=state.settings.sidebarWidth+'px';
+            sidebar.style.minWidth=state.settings.sidebarWidth+'px';
+            sidebar.style.overflow='hidden';
+            sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)';
+            if(toggleSidebarLabel) toggleSidebarLabel.textContent='Sembunyikan';
+            if(toggleSidebarIcon) toggleSidebarIcon.innerHTML=`<path stroke-linecap="round" stroke-linejoin="round" d="${CHEVRON_LEFT}"/>`;
+        }else{
+            sidebar.classList.add('desktop-hidden');
+            sidebar.style.width='0';
+            sidebar.style.minWidth='0';
+            sidebar.style.overflow='hidden';
+            sidebar.style.borderRight='none';
+            if(toggleSidebarLabel) toggleSidebarLabel.textContent='Tampilkan';
+            if(toggleSidebarIcon) toggleSidebarIcon.innerHTML=`<path stroke-linecap="round" stroke-linejoin="round" d="${CHEVRON_RIGHT}"/>`;
+        }
+    }
     function closeSidebarMobile(){ if(window.innerWidth<=768){ sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); } }
     function exportChat(format){ if(!state.currentChatId||state.messages.length===0){ alert('Tidak ada chat yang aktif.'); return; } const title=getChatTitle(state.currentChatId); let content=''; if(format==='txt'){ content=state.messages.map(m=>`${m.role==='user'?'User':'Zeph AI'} (${formatTime(m.timestamp)}):\n${m.content}\n`).join('\n'); }else if(format==='md'){ content=`# ${title}\n\n`+state.messages.map(m=>`**${m.role==='user'?'User':'Zeph AI'}** (${formatTime(m.timestamp)})\n\n${m.content}\n\n`).join('---\n\n'); } const blob=new Blob([content],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${title}.${format}`; a.click(); URL.revokeObjectURL(url); }
     function importChat(){ const input=document.createElement('input'); input.type='file'; input.accept='.txt,.md'; input.onchange=(e)=>{ const file=e.target.files?.[0]; if(!file) return; const reader=new FileReader(); reader.onload=(ev)=>{ try{ const text=ev.target?.result; if(typeof text==='string'){ const lines=text.split('\n').filter(l=>l.trim()); const newMessages=[]; let currentRole='user'; let currentContent=''; for(const line of lines){ if(line.startsWith('User')||line.startsWith('Zeph AI')){ if(currentContent){ newMessages.push({role:currentRole,content:currentContent.trim(),timestamp:Date.now()}); currentContent=''; } currentRole=line.startsWith('User')?'user':'ai'; }else{ currentContent+=line+'\n'; } } if(currentContent){ newMessages.push({role:currentRole,content:currentContent.trim(),timestamp:Date.now()}); } if(newMessages.length>0){ if(!state.currentChatId) state.currentChatId=uid(); state.messages=newMessages; const title=getFirstText(newMessages[0]?.content||'Imported Chat'); addHistory(state.currentChatId,title,newMessages[0]?.content||''); renderMessages(); saveState(); renderAll(); }else{ alert('Format tidak dikenali.'); } } }catch(err){ alert('Gagal import: '+err.message); } }; reader.readAsText(file); }; input.click(); }
     function getFirstText(msg){ const plain=msg.replace(/<[^>]*>/g,''); return truncate(plain,50); }
-    function openSettings(){ const overlay=document.getElementById('settings-overlay'); overlay.classList.add('active'); document.getElementById('set-theme').value=state.settings.theme||'dark'; document.getElementById('set-lang').value=state.settings.lang||'id'; document.getElementById('set-fontsize').value=state.settings.fontSize||15; document.getElementById('fontsize-label').textContent=(state.settings.fontSize||15)+'px'; document.getElementById('set-history').checked=state.settings.chatHistory!==false; document.getElementById('set-autoscroll').checked=state.settings.autoScroll!==false; document.getElementById('set-streaming').checked=state.settings.streaming!==false; document.getElementById('set-sidebarwidth').value=state.settings.sidebarWidth||280; document.getElementById('set-bubbleradius').value=state.settings.bubbleRadius||18; document.getElementById('set-animspeed').value=state.settings.animSpeed||'normal'; }
-    function closeSettings(){ document.getElementById('settings-overlay').classList.remove('active'); }
+    function openSettings(){ const overlay=document.getElementById('settings-overlay'); overlay.classList.remove('hidden'); overlay.classList.add('active'); document.getElementById('set-theme').value=state.settings.theme||'dark'; document.getElementById('set-lang').value=state.settings.lang||'id'; document.getElementById('set-fontsize').value=state.settings.fontSize||15; document.getElementById('fontsize-label').textContent=(state.settings.fontSize||15)+'px'; document.getElementById('set-history').checked=state.settings.chatHistory!==false; document.getElementById('set-autoscroll').checked=state.settings.autoScroll!==false; document.getElementById('set-streaming').checked=state.settings.streaming!==false; document.getElementById('set-sidebarwidth').value=state.settings.sidebarWidth||280; document.getElementById('set-bubbleradius').value=state.settings.bubbleRadius||18; document.getElementById('set-animspeed').value=state.settings.animSpeed||'normal'; }
+    function closeSettings(){ const overlay=document.getElementById('settings-overlay'); overlay.classList.remove('active'); overlay.classList.add('hidden'); }
+    // FIX: renderMessages() now runs BEFORE applySettings(). Previously applySettings()
+    // ran first, then renderMessages() rebuilt the message bubbles from scratch and wiped
+    // out the theme colors that were just applied — e.g. switching to Light Mode and
+    // saving would leave the chat bubbles stuck in dark styling.
     function saveSettings(){
         state.settings.theme = document.getElementById('set-theme').value;
         state.settings.lang = document.getElementById('set-lang').value;
@@ -474,8 +537,8 @@
         state.settings.sidebarWidth = parseInt(document.getElementById('set-sidebarwidth').value);
         state.settings.bubbleRadius = parseInt(document.getElementById('set-bubbleradius').value);
         state.settings.animSpeed = document.getElementById('set-animspeed').value;
-        applySettings();
         renderMessages();
+        applySettings();
         closeSettings();
         saveState();
     }
@@ -490,13 +553,16 @@
         if(themeSelect) themeSelect.value = state.settings.theme;
     }
 
+    // FIX: renderAll()/renderMessages() now run BEFORE applySettings() on startup too,
+    // for the same reason as saveSettings() above — otherwise a saved Light Mode
+    // preference wouldn't be applied to the messages restored from localStorage.
     function init(){
         const hasSaved=loadState();
-        applySettings();
-        modelSelect.value=state.model||'mixtral-8x7b-32768';
+        modelSelect.value=state.model||'openai/gpt-oss-20b';
         renderAll();
         if(hasSaved&&state.messages.length>0) renderMessages();
         else{ welcomeScreen.style.display='flex'; msgContainer.innerHTML=''; }
+        applySettings();
 
         sendBtn.addEventListener('click',()=>{const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);});
         chatInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); const text=chatInput.value; if(text.trim()&&!state.isGenerating) sendMessage(text);}});
@@ -523,7 +589,7 @@
         document.querySelectorAll('.suggestion-card').forEach(card=>{card.addEventListener('click',()=>{const prompt=card.dataset.prompt||card.textContent.trim(); chatInput.value=prompt; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=prompt.length; chatInput.focus(); if(prompt.trim()&&!state.isGenerating) sendMessage(prompt);});});
         document.getElementById('emoji-btn').addEventListener('click',()=>{const emojis=['😊','🔥','✨','🚀','💡','🎯','📌','✅','🎉','💪','🤖','🧠']; const pick=emojis[Math.floor(Math.random()*emojis.length)]; chatInput.value+=pick; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();});
         document.getElementById('upload-btn').addEventListener('click',()=>{const input=document.createElement('input'); input.type='file'; input.accept='image/*,.pdf,.txt,.md'; input.click(); input.onchange=(e)=>{const file=e.target.files?.[0]; if(file){const reader=new FileReader(); reader.onload=(ev)=>{const content=ev.target?.result; if(typeof content==='string'){chatInput.value+=`\n[Upload: ${file.name}]\n${content.slice(0,200)}...`;}else{chatInput.value+=`\n[Upload: ${file.name}]`;} chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; if(file.type.startsWith('text/')||file.name.endsWith('.md')||file.name.endsWith('.txt')){reader.readAsText(file);}else{chatInput.value+=`\n[Upload: ${file.name} (gambar)]`; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}}};});
-        document.getElementById('voice-btn').addEventListener('click',()=>{if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const recognizer=new SR(); recognizer.lang='id-ID'; recognizer.interimResults=false; recognizer.onresult=(e)=>{const transcript=e.results[0][0].transcript; chatInput.value+=transcript; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; recognizer.start();}else{alert('Voice input tidak didukung di browser ini.');}});
+        document.getElementById('voice-btn').addEventListener('click',()=>{if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const recognizer=new SR(); recognizer.lang= state.settings.lang==='en' ? 'en-US' : 'id-ID'; recognizer.interimResults=false; recognizer.onresult=(e)=>{const transcript=e.results[0][0].transcript; chatInput.value+=transcript; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length; chatInput.focus();}; recognizer.start();}else{alert('Voice input tidak didukung di browser ini.');}});
         document.getElementById('export-txt').addEventListener('click',()=>exportChat('txt'));
         document.getElementById('export-md').addEventListener('click',()=>exportChat('md'));
         document.getElementById('import-btn').addEventListener('click',importChat);
@@ -535,8 +601,8 @@
         });
         document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault(); newChat();} if(e.key==='Escape') closeSidebarMobile();});
         chatInput.focus();
-        window.addEventListener('resize',()=>{if(window.innerWidth>768){sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); if(!sidebarVisible){sidebarVisible=true; sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; document.getElementById('toggle-sidebar-btn').innerHTML=`<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg> Hide Sidebar`;}}});
-        console.log('🚀 Zeph AI v2.1 ready! (settings modal + stop fix)');
+        window.addEventListener('resize',()=>{if(window.innerWidth>768){sidebar.classList.remove('mobile-open'); overlay.classList.remove('active'); if(!sidebarVisible){sidebarVisible=true; sidebar.classList.remove('desktop-hidden'); sidebar.style.width=state.settings.sidebarWidth+'px'; sidebar.style.minWidth=state.settings.sidebarWidth+'px'; sidebar.style.overflow='hidden'; sidebar.style.borderRight='1px solid rgba(255,255,255,0.05)'; if(toggleSidebarLabel) toggleSidebarLabel.textContent='Sembunyikan'; if(toggleSidebarIcon) toggleSidebarIcon.innerHTML=`<path stroke-linecap="round" stroke-linejoin="round" d="${CHEVRON_LEFT}"/>`;}}});
+        console.log('🚀 Zeph AI v2.2 ready! (theme-order fix + title fix + i18n fix)');
     }
     if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',init); }else{ init(); }
 })();
