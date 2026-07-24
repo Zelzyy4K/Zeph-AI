@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2 custom-scrollbar">
             <div class="text-xs text-white/30 uppercase tracking-wider px-2 py-2 font-medium">Recent</div>
             <div id="history-list" class="space-y-0.5"></div>
             
@@ -64,7 +64,7 @@
                 Upgrade <span class="badge-pro ml-auto text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded-md">Pro</span>
             </button>
             <button class="sidebar-link w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white transition" id="toggle-sidebar-btn">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <svg id="toggle-sidebar-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
                 <span id="toggle-sidebar-label">Sembunyikan</span>
             </button>
         </div>
