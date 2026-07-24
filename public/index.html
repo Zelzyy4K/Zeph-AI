@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
     <title>Zeph AI</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
 </head>
 <body class="bg-[#0A0A0A] text-white font-['Inter'] antialiased">
 <div id="app" class="flex h-screen overflow-hidden">
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20"></div>
 
     <aside id="sidebar" class="w-64 bg-[#111] flex flex-col border-r border-white/5 z-30 transition-all duration-300">
         <div class="p-4 flex items-center justify-between border-b border-white/5">
@@ -30,9 +30,14 @@
                 </div>
                 <span class="logo-text font-semibold text-white">Zeph AI</span>
             </div>
-            <button id="new-chat-btn" class="p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition" title="Chat Baru">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            </button>
+            <div class="flex items-center gap-1">
+                <button id="new-chat-btn" class="p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition" title="Chat Baru">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                </button>
+                <button id="mobile-close-btn" class="hidden p-1.5 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition" title="Tutup Sidebar">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
         </div>
 
         <div class="px-3 py-3 flex-shrink-0">
