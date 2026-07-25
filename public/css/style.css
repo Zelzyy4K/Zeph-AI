@@ -2,19 +2,19 @@
 html {
     height:100vh;
     height:100dvh; /* dvh = tinggi asli area terlihat, otomatis menyesuaikan saat address bar HP muncul/hilang */
-}
 html, body {
+    height:100%;
+    height:100dvh;      /* tambahan: pakai dynamic viewport height */
     width:100%;
     max-width:100vw;
     overflow:hidden;
     overflow-x:hidden;
-    overscroll-behavior:none;
+    overscroll-behavior:none;   /* diubah dari overscroll-behavior-x saja */
     position:fixed;
     inset:0;
     font-family:'Inter',sans-serif;
     background:#0A0A0A;
     color:#fff;
-    touch-action:manipulation;
 }
 body {
     height:100vh;
