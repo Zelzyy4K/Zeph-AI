@@ -34,6 +34,7 @@
     const newChatBtn = $('new-chat-btn');
     const mobileCloseBtn = $('mobile-close-btn');
     const menuToggle = $('menu-toggle');
+    const menuToggleDesktop = $('menu-toggle-desktop');
     const modelSelect = $('model-select');
     const darkToggle = $('dark-toggle');
     const historyList = $('history-list');
@@ -577,6 +578,7 @@
         chatInput.addEventListener('input',()=>{chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=chatInput.value.length;});
         newChatBtn.addEventListener('click',newChat);
         if(menuToggle) menuToggle.addEventListener('click',toggleSidebar);
+        if(menuToggleDesktop) menuToggleDesktop.addEventListener('click',toggleSidebar);
         if(toggleSidebarBtn) toggleSidebarBtn.addEventListener('click',toggleSidebar);
         if(overlay) overlay.addEventListener('click',closeSidebarMobile);
         if(mobileCloseBtn) mobileCloseBtn.addEventListener('click',closeSidebarMobile);
