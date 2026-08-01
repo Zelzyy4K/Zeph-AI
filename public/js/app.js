@@ -604,6 +604,13 @@
         document.getElementById('export-txt').addEventListener('click',()=>exportChat('txt'));
         document.getElementById('export-md').addEventListener('click',()=>exportChat('md'));
         document.getElementById('import-btn').addEventListener('click',importChat);
+        const headerMoreBtn = $('header-more-btn');
+        const headerMoreMenu = $('header-more-menu');
+        if(headerMoreBtn && headerMoreMenu){
+            headerMoreBtn.addEventListener('click', (e) => { e.stopPropagation(); headerMoreMenu.classList.toggle('open'); });
+            document.addEventListener('click', (e) => { if(headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target!==headerMoreBtn && !headerMoreBtn.contains(e.target)) headerMoreMenu.classList.remove('open'); });
+            headerMoreMenu.addEventListener('click', (e) => { if(e.target.closest('button')) headerMoreMenu.classList.remove('open'); });
+        }
         stopBtn.addEventListener('click',()=>{
             if(activeController) activeController.abort();
             state.isGenerating=false;
