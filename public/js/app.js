@@ -501,10 +501,15 @@
 
     function newChat(){ state.messages=[]; state.currentChatId=null; renderMessages(); chatInput.value=''; charCounter.textContent='0'; chatInput.style.height='auto'; saveState(); closeSidebarMobile(); chatInput.focus(); }
     // Sidebar toggle label kept fully in Bahasa Indonesia to match the rest of the app.
+    let sidebarToggleLock = false;
     function toggleSidebar(){
         if(window.innerWidth<=768){
-            sidebar.classList.toggle('mobile-open');
-            overlay.classList.toggle('active');
+            if(sidebarToggleLock) return;
+            sidebarToggleLock = true;
+            setTimeout(()=>{ sidebarToggleLock = false; }, 350);
+            const willOpen = !sidebar.classList.contains('mobile-open');
+            sidebar.classList.toggle('mobile-open', willOpen);
+            overlay.classList.toggle('active', willOpen);
             return;
         }
         sidebarVisible=!sidebarVisible;
