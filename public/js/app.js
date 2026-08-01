@@ -590,11 +590,11 @@
         searchInput.addEventListener('input',renderAll);
         document.getElementById('profile-btn').addEventListener('click',openSettings);
         document.getElementById('settings-btn').addEventListener('click',openSettings);
-        document.getElementById('settings-close').addEventListener('click',closeSettings);
-        document.getElementById('settings-cancel').addEventListener('click',closeSettings);
-        document.getElementById('settings-save').addEventListener('click',saveSettings);
-        document.getElementById('settings-overlay').addEventListener('click',(e)=>{if(e.target===e.currentTarget) closeSettings();});
-        document.getElementById('set-fontsize').addEventListener('input',(e)=>{document.getElementById('fontsize-label').textContent=e.target.value+'px';});
+        document.getElementById('settings-close')?.addEventListener('click',closeSettings);
+        document.getElementById('settings-cancel')?.addEventListener('click',closeSettings);
+        document.getElementById('settings-save')?.addEventListener('click',saveSettings);
+        document.getElementById('settings-overlay')?.addEventListener('click',(e)=>{if(e.target===e.currentTarget) closeSettings();});
+        document.getElementById('set-fontsize')?.addEventListener('input',(e)=>{document.getElementById('fontsize-label').textContent=e.target.value+'px';});
         document.getElementById('help-btn').addEventListener('click',showHelp);
         document.getElementById('upgrade-btn').addEventListener('click',showUpgrade);
         document.querySelectorAll('.suggestion-card').forEach(card=>{card.addEventListener('click',()=>{const prompt=card.dataset.prompt||card.textContent.trim(); chatInput.value=prompt; chatInput.style.height='auto'; chatInput.style.height=Math.min(chatInput.scrollHeight,160)+'px'; charCounter.textContent=prompt.length; chatInput.focus(); if(prompt.trim()&&!state.isGenerating) sendMessage(prompt);});});
