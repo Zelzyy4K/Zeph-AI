@@ -584,7 +584,7 @@
         newChatBtn.addEventListener('click',newChat);
         if(menuToggle) menuToggle.addEventListener('click',toggleSidebar);
         if(menuToggleDesktop) menuToggleDesktop.addEventListener('click',toggleSidebar);
-        if(toggleSidebarBtn) toggleSidebarBtn.addEventListener('click',toggleSidebar);
+        if(toggleSidebarBtn) toggleSidebarBtn.addEventListener('click',()=>{ if(window.innerWidth<=768) closeSidebarMobile(); else toggleSidebar(); });
         if(overlay) overlay.addEventListener('click',closeSidebarMobile);
         if(mobileCloseBtn) mobileCloseBtn.addEventListener('click',closeSidebarMobile);
         modelSelect.addEventListener('change',()=>{state.model=modelSelect.value; saveState();});
