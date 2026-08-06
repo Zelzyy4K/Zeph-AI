@@ -5,25 +5,745 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zeph AI · modern chat</title>
   
-  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  
-  <!-- Google Font - Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap" rel="stylesheet">
   
-  <!-- Marked.js untuk Markdown -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  
-  <!-- Highlight.js untuk Syntax Highlighting -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   
-  <!-- CSS Utama -->
-  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ===== RESET ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0A0A0A;
+      color: #FFFFFF;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    button { background: none; border: none; color: inherit; cursor: pointer; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #181818; }
+    ::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 12px; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: #181818;
+      border-right: 1px solid #2B2B2B;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      overflow-y: auto;
+      flex-shrink: 0;
+      transition: transform 0.3s ease, width 0.3s ease;
+    }
+    .sidebar.collapsed { 
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: none !important;
+    }
+    .sidebar-header { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+    .logo { font-size: 22px; font-weight: 600; }
+    .logo i { margin-right: 8px; font-size: 24px; }
+    .new-chat-btn {
+      background: #2B2B2B;
+      padding: 12px 16px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: 0.2s;
+    }
+    .new-chat-btn:hover { background: #3a3a3a; }
+    .sidebar-search {
+      background: #1f1f1f;
+      border-radius: 40px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #2B2B2B;
+    }
+    .sidebar-search input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      width: 100%;
+      outline: none;
+      font-size: 13px;
+    }
+    .sidebar-search input::placeholder { color: #6b6b6b; }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      margin: 0 -8px;
+      padding: 0 8px;
+    }
+    .chat-history-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 30px;
+      font-size: 13px;
+      color: #b0b0b0;
+      transition: 0.15s;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+    .chat-history-item:hover {
+      background: #2B2B2B;
+      color: #fff;
+    }
+    .chat-history-item.active {
+      background: #2B2B2B;
+      color: #fff;
+    }
+    .chat-history-item .chat-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    .chat-history-empty {
+      color: #6b6b6b;
+      font-size: 13px;
+      padding: 20px 12px;
+      text-align: center;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 30px;
+      font-size: 14px;
+      transition: 0.15s;
+      color: #b0b0b0;
+    }
+    .nav-item i { width: 20px; font-size: 16px; }
+    .nav-item:hover { background: #2B2B2B; color: #fff; }
+    .nav-divider { height: 1px; background: #2B2B2B; margin: 12px 0; }
+    .sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid #2B2B2B; }
+
+    /* ===== MAIN ===== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0A0A0A;
+      min-width: 0;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f1f1f;
+      background: rgba(10,10,10,0.7);
+      backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left .logo-small { font-size: 18px; font-weight: 600; }
+    .model-dropdown {
+      background: #181818;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 13px;
+      border: 1px solid #2B2B2B;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+    .model-dropdown:hover { background: #2B2B2B; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .profile-icon { 
+      width: 34px; 
+      height: 34px; 
+      border-radius: 50%; 
+      background: #2B2B2B; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      cursor: pointer;
+    }
+    .profile-icon:hover { background: #3a3a3a; }
+
+    /* ===== CHAT ===== */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      scroll-behavior: smooth;
+    }
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      gap: 18px;
+    }
+    .welcome .big-logo { font-size: 56px; font-weight: 300; }
+    .welcome .sub { font-size: 20px; color: #b0b0b0; }
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: 600px;
+      margin-top: 12px;
+    }
+    .suggestion-card {
+      background: #181818;
+      border: 1px solid #2B2B2B;
+      padding: 12px 18px;
+      border-radius: 40px;
+      font-size: 14px;
+      transition: 0.15s;
+      cursor: pointer;
+      color: #d0d0d0;
+    }
+    .suggestion-card:hover { background: #2B2B2B; color: #fff; }
+
+    /* MESSAGES */
+    .message {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .message.user {
+      flex-direction: row-reverse;
+      justify-content: flex-start;
+    }
+    .message.ai {
+      flex-direction: row;
+      justify-content: flex-start;
+    }
+    .message .avatar {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 50%;
+      background: #2B2B2B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .message.user .avatar { background: #3a3a3a; }
+    .bubble {
+      padding: 10px 16px;
+      border-radius: 16px;
+      border: 1px solid #2B2B2B;
+      line-height: 1.6;
+      word-break: break-word;
+      font-size: 15px;
+      max-width: 75%;
+      background: #181818;
+    }
+    .message.user .bubble {
+      background: #2B2B2B;
+      border-color: #3a3a3a;
+      border-top-right-radius: 4px;
+    }
+    .message.ai .bubble {
+      background: #181818;
+      border-color: #2B2B2B;
+      border-top-left-radius: 4px;
+    }
+    .bubble pre { 
+      background: #0A0A0A; 
+      padding: 12px; 
+      border-radius: 12px; 
+      overflow-x: auto; 
+      margin: 8px 0; 
+      border: 1px solid #1f1f1f; 
+    }
+    .bubble .copy-btn { 
+      background: #1f1f1f; 
+      padding: 4px 10px; 
+      border-radius: 30px; 
+      font-size: 12px; 
+      float: right; 
+      margin: 4px; 
+      cursor: pointer; 
+      color: #aaa;
+    }
+    .bubble .copy-btn:hover { background: #2B2B2B; color: #fff; }
+    .bubble .actions { 
+      display: flex; 
+      gap: 6px; 
+      margin-top: 6px; 
+      justify-content: flex-end; 
+    }
+    .bubble .actions i { 
+      font-size: 13px; 
+      color: #666; 
+      transition: 0.2s; 
+      cursor: pointer; 
+      padding: 4px; 
+      border-radius: 4px; 
+    }
+    .bubble .actions i:hover { 
+      color: #fff; 
+      background: #2B2B2B; 
+    }
+
+    /* TYPING */
+    .typing-indicator {
+      display: flex;
+      gap: 6px;
+      padding: 8px 0;
+      align-self: flex-start;
+      margin-left: 44px;
+    }
+    .typing-indicator span {
+      width: 8px; height: 8px; background: #6b6b6b; border-radius: 50%;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%,60%,100%{ transform: translateY(0); } 30%{ transform: translateY(-6px); } }
+
+    /* ===== INPUT ===== */
+    .input-area {
+      padding: 12px 24px 24px 24px;
+      background: transparent;
+      border-top: 1px solid #1f1f1f;
+      flex-shrink: 0;
+      background: rgba(10,10,10,0.5);
+      backdrop-filter: blur(4px);
+    }
+    .input-wrapper {
+      background: #181818;
+      border-radius: 40px;
+      border: 1px solid #2B2B2B;
+      padding: 4px 6px 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+    .plus-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #888;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+    .plus-btn:hover {
+      color: #fff;
+      background: #2B2B2B;
+    }
+    .plus-btn.active {
+      background: #2B2B2B;
+      color: #fff;
+      transform: rotate(45deg);
+    }
+
+    .plus-popup {
+      display: none;
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      background: #181818;
+      border: 1px solid #2B2B2B;
+      border-radius: 16px;
+      padding: 8px;
+      z-index: 30;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      min-width: 180px;
+    }
+    .plus-popup.active { display: block; }
+    .plus-popup .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.15s;
+      color: #d0d0d0;
+      font-size: 14px;
+    }
+    .plus-popup .menu-item:hover {
+      background: #2B2B2B;
+      color: #fff;
+    }
+    .plus-popup .menu-item i {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+      color: #888;
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      resize: none;
+      outline: none;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      max-height: 120px;
+      padding: 6px 4px;
+      line-height: 1.5;
+      min-height: 36px;
+    }
+    .input-wrapper textarea::placeholder { color: #6b6b6b; }
+
+    .input-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .input-actions .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #888;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+    .input-actions .icon-btn:hover {
+      color: #fff;
+      background: #2B2B2B;
+    }
+    .input-actions .divider {
+      width: 1px;
+      height: 28px;
+      background: #2B2B2B;
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+    .send-btn {
+      background: #2B2B2B;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #fff;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      flex-shrink: 0;
+      border: none;
+      margin-left: 2px;
+    }
+    .send-btn:hover { background: #3a3a3a; }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===== HAMBURGER ===== */
+    .hamburger-btn {
+      display: none;
+      font-size: 20px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      color: #b0b0b0;
+    }
+    .hamburger-btn:hover {
+      background: #2B2B2B;
+      color: #fff;
+    }
+    .sidebar-toggle { display: none; }
+
+    /* ===== SETTINGS MODAL ===== */
+    .settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .settings-overlay.active { display: flex; }
+    .settings-modal {
+      background: #181818;
+      border: 1px solid #2B2B2B;
+      border-radius: 24px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 32px 36px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #2B2B2B;
+    }
+    .settings-header h2 { font-size: 22px; font-weight: 600; }
+    .settings-close {
+      font-size: 24px;
+      color: #888;
+      transition: 0.2s;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+    .settings-close:hover {
+      background: #2B2B2B;
+      color: #fff;
+    }
+    .settings-section { margin-bottom: 28px; }
+    .settings-section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .setting-item:last-child { border-bottom: none; }
+    .setting-item .label {
+      font-size: 14px;
+      color: #d0d0d0;
+    }
+    .setting-item .control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .setting-item select,
+    .setting-item input {
+      background: #0A0A0A;
+      border: 1px solid #2B2B2B;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      min-width: 120px;
+    }
+    .setting-item select:focus,
+    .setting-item input:focus { border-color: #3a3a3a; }
+    .toggle-switch {
+      width: 40px;
+      height: 22px;
+      background: #2B2B2B;
+      border-radius: 40px;
+      position: relative;
+      cursor: pointer;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-switch.active { background: #3a3a3a; }
+    .toggle-switch .toggle-knob {
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: 0.2s;
+    }
+    .toggle-switch.active .toggle-knob { left: 20px; }
+    .setting-item .value-display {
+      font-size: 13px;
+      color: #888;
+      min-width: 40px;
+      text-align: right;
+    }
+    .range-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .range-control input[type="range"] {
+      width: 120px;
+      accent-color: #fff;
+      background: #2B2B2B;
+      height: 4px;
+      border-radius: 4px;
+      outline: none;
+    }
+    .badge {
+      background: #2B2B2B;
+      padding: 2px 10px;
+      border-radius: 30px;
+      font-size: 11px;
+      color: #888;
+    }
+    .badge.pro {
+      background: #3a3a3a;
+      color: #fff;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (min-width: 769px) {
+      .hamburger-btn { display: inline-block; }
+      .sidebar-toggle { display: none !important; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { 
+        position: fixed; 
+        left: 0; 
+        top: 0; 
+        height: 100%; 
+        transform: translateX(-100%); 
+        width: 280px;
+        transition: transform 0.25s ease;
+        z-index: 30;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-toggle { display: inline-block; }
+      .hamburger-btn { display: none !important; }
+      .header-left .logo-small { display: none; }
+      .model-dropdown { font-size: 12px; padding: 4px 10px; }
+      .settings-modal { padding: 24px 20px; width: 95%; }
+      .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .setting-item .control { width: 100%; }
+      .plus-btn { width: 32px; height: 32px; font-size: 18px; }
+      .input-actions .icon-btn { width: 30px; height: 30px; font-size: 14px; }
+      .send-btn { padding: 6px 12px; font-size: 13px; height: 30px; }
+      .send-btn span { display: none; }
+      .chat-container { padding: 16px; }
+      .bubble { max-width: 88% !important; }
+      .plus-popup { left: -10px; min-width: 160px; }
+    }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 25; }
+    .overlay.active { display: block; }
+  </style>
 </head>
 <body>
-  <!-- Overlay for mobile -->
+  <!-- Overlay untuk mobile -->
   <div class="overlay" id="overlay"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><i class="fas fa-feather-alt"></i> Zeph AI</div>
+    </div>
+    <button class="new-chat-btn" id="newChatBtn"><i class="fas fa-plus"></i> New Chat</button>
+    <div class="sidebar-search">
+      <i class="fas fa-search" style="color:#6b6b6b;"></i>
+      <input id="searchChatInput" placeholder="Search chat...">
+    </div>
+    <div class="chat-history" id="chatHistory">
+      <div class="chat-history-empty">No chat history yet</div>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" id="settingsNavBtn"><i class="fas fa-cog"></i> Settings</div>
+    <div class="nav-item" id="navHelp"><i class="fas fa-question-circle"></i> Help</div>
+    <div class="nav-item" id="navUpgrade"><i class="fas fa-arrow-up"></i> Upgrade</div>
+    <div class="sidebar-footer">
+      <div class="nav-item" id="collapseSidebar"><i class="fas fa-chevron-left"></i> Collapse</div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <button class="hamburger-btn" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        <span class="logo-small"><i class="fas fa-feather-alt"></i> Zeph AI</span>
+        <div class="model-dropdown" id="modelDropdown">
+          <i class="fas fa-brain"></i> <span id="currentModel">Zeph Pro</span> <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="darkModeToggle"><i class="fas fa-moon" id="darkModeIcon"></i></button>
+        <div class="profile-icon" id="profileIcon"><i class="fas fa-user"></i></div>
+      </div>
+    </header>
+
+    <!-- CHAT -->
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome" id="welcomeScreen">
+        <div class="big-logo"><i class="fas fa-feather-alt"></i> Zeph AI</div>
+        <div class="sub">How can Zeph AI help you today?</div>
+        <div class="suggestions" id="suggestionContainer">
+          <div class="suggestion-card" data-text="Explain this code">Explain Code</div>
+          <div class="suggestion-card" data-text="Write an article">Write Article</div>
+          <div class="suggestion-card" data-text="Translate this">Translate</div>
+          <div class="suggestion-card" data-text="Fix this bug">Fix Bug</div>
+          <div class="suggestion-card" data-text="Brainstorm ideas">Brainstorm Ideas</div>
+          <div class="suggestion-card" data-text="Create a website">Create Website</div>
+          <div class="suggestion-card" data-text="Make a presentation">Make Presentation</div>
+          <div class="suggestion-card" data-text="Summarize this">Summarize PDF</div>
+        </div>
+      </div>
+      <div id="messageContainer"></div>
+      <div id="typingIndicator" style="display:none;" class="typing-indicator"><span></span><span></span><span></span></div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <button class="plus-btn" id="plusBtn"><i class="fas fa-plus"></i></button>
+        <div class="plus-popup" id="plusPopup">
+          <div class="menu-item" id="imageMenuItem"><i class="fas fa-image"></i><span>Image</span></div>
+          <div class="menu-item" id="fileMenuItem"><i class="fas fa-paperclip"></i><span>Attachment</span></div>
+          <div class="menu-item" id="emojiMenuItem"><i class="fas fa-smile"></i><span>Emoji</span></div>
+        </div>
+        <textarea id="chatInput" rows="1" placeholder="Message Zeph AI..."></textarea>
+        <div class="input-actions">
+          <button class="icon-btn" id="voiceBtn"><i class="fas fa-microphone"></i></button>
+          <button class="icon-btn" id="clearChatBtn"><i class="fas fa-trash"></i></button>
+          <div class="divider"></div>
+          <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i> <span>Send</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== SETTINGS MODAL ===== -->
   <div class="settings-overlay" id="settingsOverlay">
@@ -38,20 +758,13 @@
         <div class="setting-item">
           <span class="label">Theme</span>
           <div class="control">
-            <select id="settingTheme">
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-            </select>
+            <select id="settingTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
           </div>
         </div>
         <div class="setting-item">
           <span class="label">Language</span>
           <div class="control">
-            <select id="settingLanguage">
-              <option value="en">English</option>
-              <option value="id">Bahasa Indonesia</option>
-              <option value="fr">Français</option>
-            </select>
+            <select id="settingLanguage"><option value="en">English</option><option value="id">Bahasa Indonesia</option></select>
           </div>
         </div>
         <div class="setting-item">
@@ -67,21 +780,15 @@
         <h3>Chat</h3>
         <div class="setting-item">
           <span class="label">Chat History</span>
-          <div class="control">
-            <div class="toggle-switch active" id="toggleHistory"><span class="toggle-knob"></span></div>
-          </div>
+          <div class="control"><div class="toggle-switch active" id="toggleHistory"><span class="toggle-knob"></span></div></div>
         </div>
         <div class="setting-item">
           <span class="label">Auto Scroll</span>
-          <div class="control">
-            <div class="toggle-switch active" id="toggleAutoScroll"><span class="toggle-knob"></span></div>
-          </div>
+          <div class="control"><div class="toggle-switch active" id="toggleAutoScroll"><span class="toggle-knob"></span></div></div>
         </div>
         <div class="setting-item">
           <span class="label">Streaming Response</span>
-          <div class="control">
-            <div class="toggle-switch active" id="toggleStreaming"><span class="toggle-knob"></span></div>
-          </div>
+          <div class="control"><div class="toggle-switch active" id="toggleStreaming"><span class="toggle-knob"></span></div></div>
         </div>
       </div>
 
@@ -104,11 +811,7 @@
         <div class="setting-item">
           <span class="label">Animation Speed</span>
           <div class="control">
-            <select id="settingAnimationSpeed">
-              <option value="slow">Slow</option>
-              <option value="medium" selected>Medium</option>
-              <option value="fast">Fast</option>
-            </select>
+            <select id="settingAnimationSpeed"><option value="slow">Slow</option><option value="medium" selected>Medium</option><option value="fast">Fast</option></select>
           </div>
         </div>
       </div>
@@ -117,21 +820,15 @@
         <h3>Account</h3>
         <div class="setting-item">
           <span class="label">Username</span>
-          <div class="control">
-            <input type="text" id="settingUsername" value="Zeph User">
-          </div>
+          <div class="control"><input type="text" id="settingUsername" value="Zeph User"></div>
         </div>
         <div class="setting-item">
           <span class="label">Email</span>
-          <div class="control">
-            <input type="email" id="settingEmail" value="user@zeph.ai">
-          </div>
+          <div class="control"><input type="email" id="settingEmail" value="user@zeph.ai"></div>
         </div>
         <div class="setting-item">
           <span class="label">Subscription</span>
-          <div class="control">
-            <span class="badge pro">Pro</span>
-          </div>
+          <div class="control"><span class="badge pro">Pro</span></div>
         </div>
       </div>
 
@@ -139,132 +836,504 @@
         <h3>About</h3>
         <div class="setting-item">
           <span class="label">Version</span>
-          <div class="control">
-            <span class="badge">v2.0.1</span>
-          </div>
+          <div class="control"><span class="badge">v2.0.1</span></div>
         </div>
         <div class="setting-item">
           <span class="label">Developer</span>
-          <div class="control">
-            <span style="color:#888;font-size:14px;">Zeph AI Team</span>
-          </div>
+          <div class="control"><span style="color:#888;font-size:14px;">Zeph AI Team</span></div>
         </div>
         <div class="setting-item">
           <span class="label">Privacy</span>
-          <div class="control">
-            <span style="color:#888;font-size:14px;cursor:pointer;" id="privacyPolicy">View Policy</span>
-          </div>
+          <div class="control"><span style="color:#888;font-size:14px;cursor:pointer;" id="privacyPolicy">View Policy</span></div>
         </div>
         <div class="setting-item">
           <span class="label">Terms</span>
-          <div class="control">
-            <span style="color:#888;font-size:14px;cursor:pointer;" id="termsService">View Terms</span>
-          </div>
+          <div class="control"><span style="color:#888;font-size:14px;cursor:pointer;" id="termsService">View Terms</span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo"><i class="fas fa-feather-alt"></i> Zeph AI</div>
-    </div>
-    <button class="new-chat-btn" id="newChatBtn"><i class="fas fa-plus"></i> New Chat</button>
-    <div class="sidebar-search">
-      <i class="fas fa-search" style="color:#6b6b6b;"></i>
-      <input id="searchChatInput" placeholder="Search chat...">
-    </div>
-    
-    <div class="chat-history" id="chatHistory">
-      <div class="chat-history-empty">No chat history yet</div>
-    </div>
-    
-    <div class="nav-divider"></div>
-    <div class="nav-item" id="settingsNavBtn"><i class="fas fa-cog"></i> Settings</div>
-    <div class="nav-item" id="navHelp"><i class="fas fa-question-circle"></i> Help</div>
-    <div class="nav-item" id="navUpgrade"><i class="fas fa-arrow-up"></i> Upgrade</div>
-    
-    <div class="sidebar-footer">
-      <div class="nav-item" id="collapseSidebar"><i class="fas fa-chevron-left"></i> Collapse</div>
-    </div>
-  </aside>
+  <script>
+    (function() {
+      // ===== DOM REFS =====
+      const chatContainer = document.getElementById('chatContainer');
+      const messageContainer = document.getElementById('messageContainer');
+      const welcomeScreen = document.getElementById('welcomeScreen');
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const newChatBtn = document.getElementById('newChatBtn');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const collapseSidebar = document.getElementById('collapseSidebar');
+      const typingIndicator = document.getElementById('typingIndicator');
+      const chatHistory = document.getElementById('chatHistory');
+      const settingsOverlay = document.getElementById('settingsOverlay');
+      const settingsClose = document.getElementById('settingsClose');
+      const settingsNavBtn = document.getElementById('settingsNavBtn');
+      const navHelp = document.getElementById('navHelp');
+      const navUpgrade = document.getElementById('navUpgrade');
+      const darkModeToggle = document.getElementById('darkModeToggle');
+      const darkModeIcon = document.getElementById('darkModeIcon');
+      const modelDropdown = document.getElementById('modelDropdown');
+      const currentModel = document.getElementById('currentModel');
+      const profileIcon = document.getElementById('profileIcon');
+      const plusBtn = document.getElementById('plusBtn');
+      const plusPopup = document.getElementById('plusPopup');
+      const imageMenuItem = document.getElementById('imageMenuItem');
+      const fileMenuItem = document.getElementById('fileMenuItem');
+      const emojiMenuItem = document.getElementById('emojiMenuItem');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const clearChatBtn = document.getElementById('clearChatBtn');
+      const searchChatInput = document.getElementById('searchChatInput');
 
-  <!-- ===== MAIN ===== -->
-  <div class="main">
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-left">
-        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle sidebar">
-          <i class="fas fa-bars"></i>
-        </button>
-        <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-        <span class="logo-small"><i class="fas fa-feather-alt"></i> Zeph AI</span>
-        <div class="model-dropdown" id="modelDropdown">
-          <i class="fas fa-brain"></i> <span id="currentModel">Zeph Pro</span> <i class="fas fa-chevron-down"></i>
-        </div>
-      </div>
-      <div class="header-right">
-        <button id="darkModeToggle"><i class="fas fa-moon" id="darkModeIcon"></i></button>
-        <div class="profile-icon" id="profileIcon"><i class="fas fa-user"></i></div>
-      </div>
-    </header>
+      // ===== STATE =====
+      let currentChatId = null;
+      let chatData = {};
+      let isTyping = false;
+      let isSidebarCollapsed = false;
+      let isPlusOpen = false;
+      let chatIdCounter = 0;
+      let chatTitleSet = {};
 
-    <!-- CHAT -->
-    <div class="chat-container" id="chatContainer">
-      <div class="welcome" id="welcomeScreen">
-        <div class="big-logo"><i class="fas fa-feather-alt"></i> Zeph AI</div>
-        <div class="sub">How can Zeph AI help you today?</div>
-        <div class="suggestions" id="suggestionContainer">
-          <div class="suggestion-card" data-text="Explain this code: function() { return 'hello'; }">Explain Code</div>
-          <div class="suggestion-card" data-text="Write an article about AI ethics">Write Article</div>
-          <div class="suggestion-card" data-text="Translate 'Hello world' to French">Translate</div>
-          <div class="suggestion-card" data-text="Fix bug: undefined variable in JS">Fix Bug</div>
-          <div class="suggestion-card" data-text="Brainstorm ideas for a new app">Brainstorm Ideas</div>
-          <div class="suggestion-card" data-text="Create a simple website layout">Create Website</div>
-          <div class="suggestion-card" data-text="Make a presentation about climate">Make Presentation</div>
-          <div class="suggestion-card" data-text="Summarize PDF content">Summarize PDF</div>
-        </div>
-      </div>
-      <div id="messageContainer"></div>
-      <div id="typingIndicator" style="display:none;" class="typing-indicator"><span></span><span></span><span></span></div>
-    </div>
+      // ===== LOAD & SAVE =====
+      function loadChats() {
+        try {
+          const saved = localStorage.getItem('zeph_chats');
+          if (saved) {
+            const data = JSON.parse(saved);
+            chatData = data.chats || {};
+            chatIdCounter = data.counter || 0;
+            chatTitleSet = data.titleSet || {};
+          }
+        } catch (e) {}
+      }
 
-    <!-- INPUT -->
-    <div class="input-area">
-      <div class="input-wrapper">
-        <button class="plus-btn" id="plusBtn" title="More options">
-          <i class="fas fa-plus"></i>
-        </button>
-        
-        <div class="plus-popup" id="plusPopup">
-          <div class="menu-item" id="imageMenuItem">
-            <i class="fas fa-image"></i>
-            <span>Image</span>
-          </div>
-          <div class="menu-item" id="fileMenuItem">
-            <i class="fas fa-paperclip"></i>
-            <span>Attachment</span>
-          </div>
-          <div class="menu-item" id="emojiMenuItem">
-            <i class="fas fa-smile"></i>
-            <span>Emoji</span>
-          </div>
-        </div>
+      function saveChats() {
+        try {
+          localStorage.setItem('zeph_chats', JSON.stringify({
+            chats: chatData,
+            counter: chatIdCounter,
+            titleSet: chatTitleSet
+          }));
+        } catch (e) {}
+      }
 
-        <textarea id="chatInput" rows="1" placeholder="Message Zeph AI..."></textarea>
-        
-        <div class="input-actions">
-          <button class="icon-btn" id="voiceBtn" title="Voice Input"><i class="fas fa-microphone"></i></button>
-          <button class="icon-btn" id="clearChatBtn" title="Clear Chat"><i class="fas fa-trash"></i></button>
-          <div class="divider"></div>
-          <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i> <span>Send</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
+      // ===== RENDER CHAT HISTORY =====
+      function renderChatHistory() {
+        const ids = Object.keys(chatData);
+        if (ids.length === 0) {
+          chatHistory.innerHTML = '<div class="chat-history-empty">No chat history yet</div>';
+          return;
+        }
+        chatHistory.innerHTML = '';
+        ids.sort((a, b) => (chatData[b].updatedAt || 0) - (chatData[a].updatedAt || 0));
+        ids.forEach(id => {
+          const chat = chatData[id];
+          const item = document.createElement('div');
+          item.className = `chat-history-item${id === currentChatId ? ' active' : ''}`;
+          item.dataset.chatId = id;
+          const icon = document.createElement('i');
+          icon.className = 'chat-icon fas fa-comment';
+          if (chat.pinned) {
+            icon.className = 'chat-icon fas fa-thumbtack';
+            icon.style.color = '#f1c40f';
+          }
+          item.appendChild(icon);
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'chat-title';
+          titleSpan.textContent = chat.title || 'New Chat';
+          item.appendChild(titleSpan);
+          item.addEventListener('click', function() { loadChat(id); });
+          chatHistory.appendChild(item);
+        });
+      }
 
-  <!-- JavaScript -->
-  <script src="script.js"></script>
+      function loadChat(id) {
+        const chat = chatData[id];
+        if (!chat) return;
+        currentChatId = id;
+        messageContainer.innerHTML = '';
+        chat.messages.forEach(msg => {
+          addMessageToUI(msg.role, msg.content);
+        });
+        welcomeScreen.style.display = 'none';
+        renderChatHistory();
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      function addMessageToUI(role, content) {
+        const isUser = role === 'user';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.innerHTML = isUser ? '<i class="fas fa-user"></i>' : '<i class="fas fa-feather-alt"></i>';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        if (isUser) {
+          bubble.innerHTML = content;
+          bubble.style.borderTopRightRadius = '4px';
+        } else {
+          bubble.innerHTML = marked.parse(content);
+          bubble.style.borderTopLeftRadius = '4px';
+          bubble.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+          });
+        }
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        messageContainer.appendChild(msgDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      function saveCurrentChat() {
+        if (!currentChatId) return;
+        const messages = [];
+        document.querySelectorAll('.message').forEach(msg => {
+          const role = msg.classList.contains('user') ? 'user' : 'ai';
+          const content = msg.querySelector('.bubble').innerText;
+          messages.push({ role, content });
+        });
+        if (messages.length === 0) {
+          if (chatData[currentChatId]) {
+            delete chatData[currentChatId];
+            delete chatTitleSet[currentChatId];
+            currentChatId = null;
+            renderChatHistory();
+            saveChats();
+          }
+          return;
+        }
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        let title = chatData[currentChatId]?.title || 'New Chat';
+        if (!chatTitleSet[currentChatId] && firstUserMsg) {
+          title = firstUserMsg.content.substring(0, 40) + (firstUserMsg.content.length > 40 ? '...' : '');
+          chatTitleSet[currentChatId] = true;
+        }
+        chatData[currentChatId] = {
+          ...chatData[currentChatId],
+          title: title,
+          messages: messages,
+          updatedAt: Date.now(),
+          pinned: chatData[currentChatId]?.pinned || false
+        };
+        renderChatHistory();
+        saveChats();
+      }
+
+      function createNewChat() {
+        if (currentChatId && messageContainer.children.length > 0) saveCurrentChat();
+        const id = 'chat_' + (++chatIdCounter);
+        currentChatId = id;
+        chatData[id] = { title: 'New Chat', messages: [], updatedAt: Date.now(), pinned: false };
+        chatTitleSet[id] = false;
+        messageContainer.innerHTML = '';
+        welcomeScreen.style.display = 'flex';
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        renderChatHistory();
+        saveChats();
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        }
+      }
+
+      function deleteChat(id) {
+        if (confirm('Delete this chat?')) {
+          delete chatData[id];
+          delete chatTitleSet[id];
+          if (currentChatId === id) {
+            currentChatId = null;
+            messageContainer.innerHTML = '';
+            welcomeScreen.style.display = 'flex';
+          }
+          renderChatHistory();
+          saveChats();
+        }
+      }
+
+      // ===== SEND MESSAGE =====
+      function handleSend() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        if (!currentChatId) createNewChat();
+        welcomeScreen.style.display = 'none';
+        addMessage('user', text);
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        // Simulasi AI response
+        setTimeout(() => {
+          const responses = [
+            `I received: "${text}". This is a response from Zeph AI.`,
+            `Great question! Let me think about "${text}"...`,
+            `Processing "${text}"... I've analyzed your query.`
+          ];
+          const response = responses[Math.floor(Math.random() * responses.length)];
+          addMessage('ai', response);
+          setTimeout(saveCurrentChat, 100);
+        }, 500);
+        sendBtn.disabled = true;
+        setTimeout(() => sendBtn.disabled = false, 500);
+        closePlusPopup();
+      }
+
+      function addMessage(role, content) {
+        const isUser = role === 'user';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.innerHTML = isUser ? '<i class="fas fa-user"></i>' : '<i class="fas fa-feather-alt"></i>';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        if (isUser) {
+          bubble.innerHTML = content;
+          bubble.style.borderTopRightRadius = '4px';
+        } else {
+          bubble.innerHTML = marked.parse(content);
+          bubble.style.borderTopLeftRadius = '4px';
+          bubble.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+          });
+        }
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        messageContainer.appendChild(msgDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      // ===== TOGGLE FUNCTIONS =====
+      function togglePlusPopup() {
+        isPlusOpen = !isPlusOpen;
+        plusPopup.classList.toggle('active', isPlusOpen);
+        plusBtn.classList.toggle('active', isPlusOpen);
+      }
+
+      function closePlusPopup() {
+        isPlusOpen = false;
+        plusPopup.classList.remove('active');
+        plusBtn.classList.remove('active');
+      }
+
+      function toggleSidebarDesktop() {
+        if (window.innerWidth <= 768) return;
+        isSidebarCollapsed = !isSidebarCollapsed;
+        sidebar.classList.toggle('collapsed', isSidebarCollapsed);
+        const icon = hamburgerBtn.querySelector('i');
+        icon.className = isSidebarCollapsed ? 'fas fa-bars' : 'fas fa-times';
+      }
+
+      // ===== SETTINGS =====
+      function openSettings() {
+        settingsOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeSettings() {
+        settingsOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      // ===== EVENT LISTENERS =====
+      sendBtn.addEventListener('click', handleSend);
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+      });
+      chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+      });
+
+      plusBtn.addEventListener('click', function(e) { e.stopPropagation(); togglePlusPopup(); });
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.plus-btn') && !e.target.closest('.plus-popup')) closePlusPopup();
+      });
+
+      imageMenuItem.addEventListener('click', function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (file) console.log(`Image "${file.name}"`);
+        };
+        input.click();
+        closePlusPopup();
+      });
+
+      fileMenuItem.addEventListener('click', function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.txt,.md,.pdf,.docx';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (file) console.log(`File "${file.name}"`);
+        };
+        input.click();
+        closePlusPopup();
+      });
+
+      emojiMenuItem.addEventListener('click', function() {
+        const emojis = ['😊', '😂', '❤️', '🔥', '✨', '⭐', '👍', '👏', '🎉'];
+        chatInput.value += emojis[Math.floor(Math.random() * emojis.length)];
+        chatInput.focus();
+        closePlusPopup();
+      });
+
+      newChatBtn.addEventListener('click', createNewChat);
+      settingsNavBtn.addEventListener('click', openSettings);
+      settingsClose.addEventListener('click', closeSettings);
+      settingsOverlay.addEventListener('click', function(e) {
+        if (e.target === this) closeSettings();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && settingsOverlay.classList.contains('active')) closeSettings();
+      });
+
+      hamburgerBtn.addEventListener('click', toggleSidebarDesktop);
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+      });
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+
+      collapseSidebar.addEventListener('click', function() {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        } else {
+          isSidebarCollapsed = !isSidebarCollapsed;
+          sidebar.classList.toggle('collapsed', isSidebarCollapsed);
+          const icon = hamburgerBtn.querySelector('i');
+          icon.className = isSidebarCollapsed ? 'fas fa-bars' : 'fas fa-times';
+        }
+      });
+
+      navHelp.addEventListener('click', function() { console.log('Help center opened'); });
+      navUpgrade.addEventListener('click', function() { console.log('Upgrade to Pro! 🚀'); });
+
+      searchChatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          const query = this.value.trim().toLowerCase();
+          if (query) {
+            const ids = Object.keys(chatData);
+            const found = ids.filter(id => chatData[id].title.toLowerCase().includes(query));
+            if (found.length > 0) {
+              document.querySelectorAll('.chat-history-item').forEach(item => {
+                const id = item.dataset.chatId;
+                if (found.includes(id)) {
+                  item.style.background = '#2B2B2B';
+                  setTimeout(() => item.style.background = '', 2000);
+                }
+              });
+            }
+          }
+        }
+      });
+
+      darkModeToggle.addEventListener('click', function() {
+        document.body.style.background = document.body.style.background === '#0A0A0A' ? '#f0f0f0' : '#0A0A0A';
+        document.body.style.color = document.body.style.color === '#FFFFFF' ? '#0A0A0A' : '#FFFFFF';
+        darkModeIcon.className = document.body.style.background === '#0A0A0A' ? 'fas fa-moon' : 'fas fa-sun';
+      });
+
+      let modelIndex = 0;
+      const models = ['Zeph Lite', 'Zeph Pro', 'Zeph Vision'];
+      modelDropdown.addEventListener('click', function() {
+        modelIndex = (modelIndex + 1) % models.length;
+        currentModel.textContent = models[modelIndex];
+      });
+
+      profileIcon.addEventListener('click', function() { console.log('Profile menu opened'); });
+
+      voiceBtn.addEventListener('click', function() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'en-US';
+          recognition.start();
+          recognition.onresult = function(event) {
+            chatInput.value = event.results[0][0].transcript;
+            chatInput.style.height = 'auto';
+            chatInput.style.height = chatInput.scrollHeight + 'px';
+            handleSend();
+          };
+        }
+      });
+
+      clearChatBtn.addEventListener('click', function() {
+        if (messageContainer.children.length > 0 && confirm('Clear all messages?')) {
+          messageContainer.innerHTML = '';
+          welcomeScreen.style.display = 'flex';
+          if (currentChatId && chatData[currentChatId]) {
+            delete chatData[currentChatId];
+            delete chatTitleSet[currentChatId];
+            currentChatId = null;
+            renderChatHistory();
+            saveChats();
+          }
+        }
+      });
+
+      // ===== SETTINGS CONTROLS =====
+      function setupToggle(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', function() { this.classList.toggle('active'); });
+      }
+      setupToggle('toggleHistory');
+      setupToggle('toggleAutoScroll');
+      setupToggle('toggleStreaming');
+
+      document.getElementById('settingFontSize').addEventListener('input', function() {
+        document.getElementById('fontSizeDisplay').textContent = this.value + 'px';
+        document.querySelectorAll('.bubble').forEach(el => el.style.fontSize = this.value + 'px');
+      });
+
+      document.getElementById('settingBubbleRadius').addEventListener('input', function() {
+        document.getElementById('bubbleRadiusDisplay').textContent = this.value + 'px';
+        document.querySelectorAll('.bubble').forEach(el => el.style.borderRadius = this.value + 'px');
+      });
+
+      document.querySelectorAll('.suggestion-card').forEach(card => {
+        card.addEventListener('click', function() {
+          chatInput.value = this.dataset.text;
+          chatInput.focus();
+          chatInput.style.height = 'auto';
+          chatInput.style.height = chatInput.scrollHeight + 'px';
+        });
+      });
+
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        }
+      });
+
+      window.addEventListener('beforeunload', function() {
+        if (currentChatId && messageContainer.children.length > 0) saveCurrentChat();
+      });
+
+      // ===== INIT =====
+      window.addEventListener('load', () => {
+        loadChats();
+        renderChatHistory();
+        chatInput.style.height = 'auto';
+        const ids = Object.keys(chatData);
+        if (ids.length > 0) {
+          const lastId = ids.sort((a, b) => (chatData[b].updatedAt || 0) - (chatData[a].updatedAt || 0))[0];
+          if (lastId) loadChat(lastId);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
